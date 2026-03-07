@@ -224,6 +224,26 @@ export async function setKillSwitch(
   return res.json();
 }
 
+export async function getToolApproval(): Promise<{
+  allowEverything: boolean;
+}> {
+  const res = await authFetch(`${BASE}/api/safety/tool-approval`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function setToolApproval(allowEverything: boolean): Promise<{
+  allowEverything: boolean;
+}> {
+  const res = await authFetch(`${BASE}/api/safety/tool-approval`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ allowEverything }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 /** Channel list and config (secrets masked). */
 export interface ChannelEntry {
   id: string;
@@ -320,6 +340,10 @@ export interface DiscoveredTool {
   description?: string;
   connectionId: string;
   connectionName: string;
+  /** False if tool is turned off in Tools page. */
+  enabled?: boolean;
+  /** True if user said "allow every time" for this tool. */
+  allowEveryTime?: boolean;
 }
 
 export async function getDiscoveredTools(): Promise<{
@@ -328,6 +352,22 @@ export async function getDiscoveredTools(): Promise<{
   const res = await authFetch(`${BASE}/api/capabilities/mcp/tools`);
   if (!res.ok) return { tools: [] };
   return res.json();
+}
+
+/** Set tool on/off (enabled). Triggers MCP reload so worker picks up change; refetch tools after "mcp-tools-reloaded". */
+export async function patchToolEnabled(
+  toolId: string,
+  enabled: boolean,
+): Promise<void> {
+  const res = await authFetch(
+    `${BASE}/api/capabilities/mcp/tools/${encodeURIComponent(toolId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    },
+  );
+  if (!res.ok) throw new Error(await res.text());
 }
 
 /** Triggers MCP reload (fire-and-forget). Server returns 202; wait for Socket.IO "mcp-tools-reloaded" then call getDiscoveredTools(). */
@@ -379,7 +419,11 @@ export interface AppConfig {
   MAX_INPUT_TOKENS?: number;
   /** Chat timeout in milliseconds. 0 or unset = 300000 (5 min). */
   CHAT_TIMEOUT_MS?: number;
+  /** Tool approval: "llm" or "static". Default "llm". */
+  TOOL_APPROVAL_MODE?: ToolApprovalModeId;
 }
+
+export type ToolApprovalModeId = "llm" | "static";
 
 export async function getConfig(): Promise<AppConfig> {
   const res = await authFetch(`${BASE}/api/config`);

@@ -18,7 +18,10 @@ export interface ContextStore {
     userId: string,
     userText: string,
     assistantText: string,
-    userAttachments?: string[],
+    options?: {
+      userAttachments?: string[];
+      approvalRequest?: { toolName: string; argsPreview: string };
+    },
   ): Promise<void>;
   /** Persist a full turn as AI SDK messages (includes tool calls, tool results, etc.). Use when available. Call addTurnToChatHistory too so the UI has the turn. */
   addTurnToAgentThread(userId: string, messages: ModelMessage[]): Promise<void>;
@@ -102,10 +105,24 @@ export async function createContext(
       userId: string,
       userText: string,
       assistantText: string,
-      userAttachments?: string[],
+      options?: {
+        userAttachments?: string[];
+        approvalRequest?: { toolName: string; argsPreview: string };
+      },
     ): Promise<void> {
-      await chatHistory.addMessage(userId, "user", userText, userAttachments);
-      await chatHistory.addMessage(userId, "assistant", assistantText);
+      await chatHistory.addMessage(
+        userId,
+        "user",
+        userText,
+        options?.userAttachments,
+      );
+      await chatHistory.addMessage(
+        userId,
+        "assistant",
+        assistantText,
+        undefined,
+        options?.approvalRequest,
+      );
     },
 
     async addTurnToAgentThread(

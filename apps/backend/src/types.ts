@@ -123,7 +123,12 @@ export type ResponseDeliveryPayload =
   | {
       channel: "api";
       eventId: string;
-      message: { role: string; text: string };
+      message: {
+        role: string;
+        text: string;
+        /** For approval requests; frontend uses structure instead of parsing text. */
+        approvalRequest?: { toolName: string; argsPreview: string };
+      };
     }
   | { channel: "api"; eventId: string; skipped: true }
   | { channel: "slack"; channelId: string; threadTs?: string; text: string }
@@ -279,7 +284,12 @@ export interface AuditLogEntry {
     | "incoming_message"
     | "tool_call_start"
     | "tool_call_end"
-    | "run_summary";
+    | "run_summary"
+    | "approval_requested"
+    | "approval_confirmed"
+    | "approval_allow_every_time"
+    | "approval_rejected"
+    | "approval_tool_execution_failed";
   payload: Record<string, unknown>;
 }
 

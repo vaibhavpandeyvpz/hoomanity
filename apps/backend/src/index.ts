@@ -27,6 +27,7 @@ import { createAuditStore } from "./audit/audit-store.js";
 import { createSkillService } from "./capabilities/skills/skills-service.js";
 import { initSkillSettingsStore } from "./capabilities/skills/skills-settings-store.js";
 import { createMcpService } from "./capabilities/mcp/mcp-service.js";
+import { createToolSettingsStore } from "./capabilities/mcp/tool-settings-store.js";
 import { createChannelService } from "./channels/channel-service.js";
 import { createSubscriber } from "./utils/pubsub.js";
 import { createEventQueue } from "./events/event-queue.js";
@@ -37,6 +38,7 @@ import {
   type ResponseDeliveryPayload,
 } from "./types.js";
 import { initKillSwitch } from "./agents/kill-switch.js";
+import { initToolApproval } from "./agents/tool-approval.js";
 import { env, isWebAuthEnabled } from "./env.js";
 import {
   getWorkspaceAttachmentsDir,
@@ -55,6 +57,7 @@ async function main() {
   const redisUrl = env.REDIS_URL;
   initRedis(redisUrl);
   initKillSwitch(redisUrl);
+  initToolApproval(redisUrl);
 
   const eventQueue = createEventQueue({ connection: redisUrl });
   const dedupSet = new Set<string>();
@@ -86,6 +89,7 @@ async function main() {
   const scheduleStore = await initScheduleStore();
   const mcpConnectionsStore = await initMCPConnectionsStore();
   const discoveredToolsStore = createDiscoveredToolsStore();
+  const toolSettingsStore = createToolSettingsStore();
   const skillSettingsStore = await initSkillSettingsStore();
   const auditStore = createAuditStore();
   const auditLog = new AuditLog(auditStore);
@@ -202,6 +206,7 @@ async function main() {
     skillService: createSkillService(skillSettingsStore),
     skillSettingsStore,
     mcpService: createMcpService(mcpConnectionsStore),
+    toolSettingsStore,
     channelService: createChannelService(),
   });
 

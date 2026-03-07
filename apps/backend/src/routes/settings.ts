@@ -1,12 +1,20 @@
 import type { Express, Request, Response } from "express";
 import type { AppContext } from "../utils/helpers.js";
-import type { LLMProviderId, TranscriptionProviderId } from "../config.js";
+import type {
+  LLMProviderId,
+  TranscriptionProviderId,
+  ToolApprovalModeId,
+} from "../config.js";
 import { getConfig, updateConfig } from "../config.js";
 
 import {
   getKillSwitchEnabled,
   setKillSwitchEnabled,
 } from "../agents/kill-switch.js";
+import {
+  getToolApprovalAllowEverything,
+  setToolApprovalAllowEverything,
+} from "../agents/tool-approval.js";
 import { getRealtimeClientSecret } from "../chats/realtime-service.js";
 
 export function registerSettingsRoutes(app: Express, _ctx: AppContext): void {
@@ -40,6 +48,7 @@ export function registerSettingsRoutes(app: Express, _ctx: AppContext): void {
       COMPLETIONS_API_KEY: c.COMPLETIONS_API_KEY,
       MAX_INPUT_TOKENS: c.MAX_INPUT_TOKENS,
       CHAT_TIMEOUT_MS: c.CHAT_TIMEOUT_MS,
+      TOOL_APPROVAL_MODE: c.TOOL_APPROVAL_MODE,
     });
   });
 
@@ -93,6 +102,9 @@ export function registerSettingsRoutes(app: Express, _ctx: AppContext): void {
         COMPLETIONS_API_KEY: patch.COMPLETIONS_API_KEY as string | undefined,
         MAX_INPUT_TOKENS: patch.MAX_INPUT_TOKENS as number | undefined,
         CHAT_TIMEOUT_MS: patch.CHAT_TIMEOUT_MS as number | undefined,
+        TOOL_APPROVAL_MODE: patch.TOOL_APPROVAL_MODE as
+          | ToolApprovalModeId
+          | undefined,
       });
 
       res.json(updated);
@@ -122,5 +134,19 @@ export function registerSettingsRoutes(app: Express, _ctx: AppContext): void {
   app.post("/api/safety/kill-switch", (req: Request, res: Response) => {
     setKillSwitchEnabled(Boolean(req.body?.enabled));
     res.json({ enabled: getKillSwitchEnabled() });
+  });
+
+  app.get("/api/safety/tool-approval", (_req: Request, res: Response) => {
+    res.json({
+      allowEverything: getToolApprovalAllowEverything(),
+    });
+  });
+
+  app.patch("/api/safety/tool-approval", (req: Request, res: Response) => {
+    const allowEverything = Boolean(req.body?.allowEverything);
+    setToolApprovalAllowEverything(allowEverything);
+    res.json({
+      allowEverything: getToolApprovalAllowEverything(),
+    });
   });
 }
