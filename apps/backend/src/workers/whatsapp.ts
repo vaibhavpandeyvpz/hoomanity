@@ -34,12 +34,16 @@ let mcpSubscriber: ReturnType<typeof createSubscriber> | null = null;
 /** Connection state for WhatsApp (QR, status, self identity). API reads this via Redis RPC. */
 let connectionState: WhatsAppConnection = { status: "disconnected" };
 
-/** Set channels.whatsapp.enabled to false when disconnect/logout is observed (user unlink, etc.). */
+/** Set channels.whatsapp.enabled to false and clear agent identity when disconnect/logout is observed. */
 function disableWhatsAppChannel(): void {
   const current = getChannelsConfig();
-  if (!current.whatsapp?.enabled) return;
+  if (!current.whatsapp?.enabled && !current.whatsapp?.agentIdentity) return;
   updateChannelsConfig({
-    whatsapp: { ...current.whatsapp, enabled: false },
+    whatsapp: {
+      ...current.whatsapp,
+      enabled: false,
+      agentIdentity: undefined,
+    },
   });
   debug("WhatsApp channel disabled (disconnect/logout observed)");
 }
@@ -70,6 +74,16 @@ async function startAdapter(): Promise<void> {
       } else if (status === "pairing" && qr) {
         debug("QR ready for Settings UI (via RPC)");
       } else if (status === "connected") {
+        const identity = (selfNumber ?? selfId ?? "").trim();
+        if (identity) {
+          const current = getChannelsConfig();
+          if (current.whatsapp && current.whatsapp.agentIdentity !== identity) {
+            updateChannelsConfig({
+              whatsapp: { ...current.whatsapp, agentIdentity: identity },
+            });
+            debug("WhatsApp agent identity saved: %s", identity);
+          }
+        }
         debug(
           "Linked; connection open (self: %s)",
           selfNumber ?? selfId ?? "—",

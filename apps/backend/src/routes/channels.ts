@@ -1,11 +1,12 @@
 import type { Express, Request, Response } from "express";
 import type { AppContext } from "../utils/helpers.js";
-import { getChannelsConfig } from "../config.js";
+import { getChannelsConfig, loadPersisted } from "../config.js";
 
 export function registerChannelRoutes(app: Express, ctx: AppContext): void {
   const { channelService } = ctx;
 
-  app.get("/api/channels", (_req: Request, res: Response) => {
+  app.get("/api/channels", async (_req: Request, res: Response) => {
+    await loadPersisted();
     res.json({ channels: channelService.getChannels() });
   });
 

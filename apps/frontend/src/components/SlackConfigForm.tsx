@@ -22,9 +22,6 @@ export function SlackConfigForm({
   );
   const [appToken, setAppToken] = useState(String(config.appToken ?? ""));
   const [userToken, setUserToken] = useState(String(config.userToken ?? ""));
-  const [designatedUserId, setDesignatedUserId] = useState(
-    String(config.designatedUserId ?? ""),
-  );
   const [filterMode, setFilterMode] = useState(
     String(config.filterMode ?? "all"),
   );
@@ -44,10 +41,6 @@ export function SlackConfigForm({
           connectAs,
           appToken: appToken.trim() || undefined,
           userToken: userToken.trim() || undefined,
-          designatedUserId:
-            connectAs === "user"
-              ? designatedUserId.trim() || undefined
-              : undefined,
           filterMode: filterMode || "all",
           filterList: filterList
             ? filterList
@@ -91,14 +84,6 @@ export function SlackConfigForm({
         value={userToken}
         onChange={(e) => setUserToken(e.target.value)}
       />
-      {connectAs === "user" && (
-        <Input
-          label="Designated user ID (optional)"
-          placeholder="Slack user ID for directness (e.g. U01234…)"
-          value={designatedUserId}
-          onChange={(e) => setDesignatedUserId(e.target.value)}
-        />
-      )}
       <FilterModeField
         filterMode={filterMode}
         setFilterMode={setFilterMode}

@@ -395,6 +395,47 @@ function ConfigModal({
         />
       )}
       {channel.id === "slack" && (
+        <div className="mb-6">
+          {!channel.enabled ? (
+            <div className="rounded-xl border border-hooman-border bg-hooman-surface p-4">
+              <div className="flex items-center gap-2 text-sm text-hooman-muted">
+                <SlidersHorizontal className="h-4 w-4 shrink-0" />
+                <p>Enable the channel and save to link your Slack workspace.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-hooman-border bg-hooman-surface overflow-hidden">
+              <div className="flex items-center justify-between gap-3 border-b border-hooman-border/50 px-4 py-3">
+                <h4 className="text-sm font-medium text-white">
+                  Link workspace
+                </h4>
+                {(config.agentIdentity as string)?.trim() ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-hooman-green/40 bg-hooman-green/10 px-2 py-0.5 text-xs font-medium text-hooman-green">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Linked
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-hooman-border bg-hooman-border/20 px-2 py-0.5 text-xs font-medium text-hooman-muted">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Connecting
+                  </span>
+                )}
+              </div>
+              {(config.agentIdentity as string)?.trim() && (
+                <div className="p-4">
+                  <p className="text-sm text-zinc-300">
+                    Connected as{" "}
+                    <span className="font-mono text-zinc-100">
+                      {String(config.agentIdentity).trim()}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      {channel.id === "slack" && (
         <SlackConfigForm
           id={formId}
           config={config}
@@ -478,7 +519,12 @@ function WhatsAppConnectionBlock({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-zinc-300">
               {connection?.selfNumber || connection?.selfId ? (
-                <>Connected as {connection.selfNumber ?? connection.selfId}</>
+                <>
+                  Connected as{" "}
+                  <span className="font-mono text-zinc-100">
+                    {connection.selfNumber ?? connection.selfId}
+                  </span>
+                </>
               ) : (
                 <>WhatsApp is linked and receiving messages.</>
               )}
