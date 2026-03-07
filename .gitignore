@@ -148,3 +148,9 @@ vite.config.ts.timestamp-*
 
 # ngrok
 ngrok.yml
+
+# Local agent config(s)
+.agents/
+
+# Skills lock
+skills-lock.json

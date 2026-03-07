@@ -12,6 +12,7 @@ import {
   addSkillsPackage,
   removeSkillsPackage,
   updateSkillEnabled,
+  uploadSkill,
 } from "../api";
 import type { SkillEntry } from "../api";
 import { Switch } from "./Switch";
@@ -33,12 +34,16 @@ export const Skills = forwardRef<SkillsHandle>(function Skills(_props, ref) {
   const [skillViewLoading, setSkillViewLoading] = useState(false);
   const [addPackage, setAddPackage] = useState("");
   const [addSkillsRaw, setAddSkillsRaw] = useState("");
+  const [addTab, setAddTab] = useState<"install" | "upload">("install");
+  const [addUploadFile, setAddUploadFile] = useState<File | null>(null);
   const [skillsError, setSkillsError] = useState<string | null>(null);
 
   function startAdd() {
     setSkillsError(null);
     setAddPackage("");
     setAddSkillsRaw("");
+    setAddTab("install");
+    setAddUploadFile(null);
     setSkillsAddOpen(true);
   }
 
@@ -80,27 +85,46 @@ export const Skills = forwardRef<SkillsHandle>(function Skills(_props, ref) {
                   ) : undefined
                 }
                 onClick={async () => {
-                  if (!addPackage.trim()) {
-                    setSkillsError("Package name or URL is required.");
-                    return;
-                  }
-                  setSkillsError(null);
-                  setSkillsAddSubmitting(true);
-                  try {
-                    const skills = addSkillsRaw
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean);
-                    await addSkillsPackage({
-                      package: addPackage.trim(),
-                      skills: skills.length > 0 ? skills : undefined,
-                    });
-                    setSkillsAddOpen(false);
-                    loadSkills();
-                  } catch (e) {
-                    setSkillsError((e as Error).message);
-                  } finally {
-                    setSkillsAddSubmitting(false);
+                  if (addTab === "install") {
+                    if (!addPackage.trim()) {
+                      setSkillsError("Package name or URL is required.");
+                      return;
+                    }
+                    setSkillsError(null);
+                    setSkillsAddSubmitting(true);
+                    try {
+                      const skills = addSkillsRaw
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      await addSkillsPackage({
+                        package: addPackage.trim(),
+                        skills: skills.length > 0 ? skills : undefined,
+                      });
+                      setSkillsAddOpen(false);
+                      loadSkills();
+                    } catch (e) {
+                      setSkillsError((e as Error).message);
+                    } finally {
+                      setSkillsAddSubmitting(false);
+                    }
+                  } else {
+                    if (!addUploadFile) {
+                      setSkillsError("Please select a .md file.");
+                      return;
+                    }
+                    setSkillsError(null);
+                    setSkillsAddSubmitting(true);
+                    try {
+                      const content = await addUploadFile.text();
+                      await uploadSkill({ content });
+                      setSkillsAddOpen(false);
+                      loadSkills();
+                    } catch (e) {
+                      setSkillsError((e as Error).message);
+                    } finally {
+                      setSkillsAddSubmitting(false);
+                    }
                   }
                 }}
               >
@@ -114,21 +138,23 @@ export const Skills = forwardRef<SkillsHandle>(function Skills(_props, ref) {
                 Cancel
               </Button>
             </div>
-            <a
-              href="https://smithery.ai/skills"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-hooman-border bg-hooman-surface px-3 py-2 text-sm text-[#FF5601] hover:bg-[#FF5601]/10 hover:text-[#FF5601] focus:outline-none focus:ring-2 focus:ring-[#FF5601]/50 focus:ring-offset-2 focus:ring-offset-hooman-bg"
-            >
-              <img
-                src="/smithery-logo.svg"
-                alt=""
-                className="h-4 w-auto"
-                width={34}
-                height={40}
-              />
-              Find on Smithery
-            </a>
+            {addTab === "install" && (
+              <a
+                href="https://smithery.ai/skills"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-hooman-border bg-hooman-surface px-3 py-2 text-sm text-[#FF5601] hover:bg-[#FF5601]/10 hover:text-[#FF5601] focus:outline-none focus:ring-2 focus:ring-[#FF5601]/50 focus:ring-offset-2 focus:ring-offset-hooman-bg"
+              >
+                <img
+                  src="/smithery-logo.svg"
+                  alt=""
+                  className="h-4 w-auto"
+                  width={34}
+                  height={40}
+                />
+                Find on Smithery
+              </a>
+            )}
           </div>
         }
       >
@@ -137,20 +163,73 @@ export const Skills = forwardRef<SkillsHandle>(function Skills(_props, ref) {
             {skillsError}
           </div>
         )}
-        <div className="space-y-3">
-          <Input
-            label="Package name or URL"
-            placeholder="e.g. vercel-labs/agent-skills or https://github.com/owner/repo"
-            value={addPackage}
-            onChange={(e) => setAddPackage(e.target.value)}
-          />
-          <Input
-            label="Skills (optional, comma-separated)"
-            placeholder="e.g. frontend-design, skill-creator"
-            value={addSkillsRaw}
-            onChange={(e) => setAddSkillsRaw(e.target.value)}
-          />
+        <div className="flex gap-1 border-b border-hooman-border -mb-px mb-4">
+          {(
+            [
+              { id: "install" as const, label: "Install" },
+              { id: "upload" as const, label: "Upload" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setAddTab(tab.id);
+                setSkillsError(null);
+              }}
+              className={`px-3 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+                addTab === tab.id
+                  ? "border-hooman-accent text-white bg-hooman-surface"
+                  : "border-transparent text-hooman-muted hover:text-white"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+        {addTab === "install" && (
+          <div className="space-y-3">
+            <Input
+              label="Package name or URL"
+              placeholder="e.g. vercel-labs/agent-skills or https://github.com/owner/repo"
+              value={addPackage}
+              onChange={(e) => setAddPackage(e.target.value)}
+            />
+            <Input
+              label="Skills (optional, comma-separated)"
+              placeholder="e.g. frontend-design, skill-creator"
+              value={addSkillsRaw}
+              onChange={(e) => setAddSkillsRaw(e.target.value)}
+            />
+          </div>
+        )}
+        {addTab === "upload" && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-white mb-1">
+                SKILL.md file
+              </label>
+              <input
+                type="file"
+                accept=".md"
+                className="block w-full text-sm text-hooman-muted file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-hooman-surface file:text-white hover:file:bg-hooman-border"
+                onChange={(e) => setAddUploadFile(e.target.files?.[0] ?? null)}
+              />
+              {addUploadFile && (
+                <p className="text-xs text-hooman-muted mt-1">
+                  {addUploadFile.name}
+                </p>
+              )}
+            </div>
+            <p className="text-xs text-hooman-muted">
+              The skill is installed under the folder name from the{" "}
+              <code className="text-hooman-accent">name</code> field in the
+              file&apos;s frontmatter (e.g.{" "}
+              <code className="text-hooman-accent">name: aws-agentic-ai</code> →
+              .agents/skills/aws-agentic-ai/SKILL.md).
+            </p>
+          </div>
+        )}
       </Modal>
       <Modal
         open={skillView !== null}

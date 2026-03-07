@@ -503,6 +503,14 @@ export interface AppConfig {
   CHAT_TIMEOUT_MS?: number;
   /** Tool approval: "llm" or "static". Default "llm". */
   TOOL_APPROVAL_MODE?: ToolApprovalModeId;
+  /** Comma-separated enabled system MCP names (e.g. time,fetch,skills). Toggle in MCP tab. */
+  SYSTEM_MCP_SERVERS?: string;
+}
+
+export interface SystemMcpEntry {
+  id: string;
+  name: string;
+  enabled: boolean;
 }
 
 export type ToolApprovalModeId = "llm" | "static";
@@ -597,6 +605,16 @@ export async function getMCPConnections(): Promise<{
   connections: MCPConnection[];
 }> {
   const res = await authFetch(`${BASE}/api/capabilities/mcp/connections`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getSystemMCPConnections(): Promise<{
+  systemConnections: SystemMcpEntry[];
+}> {
+  const res = await authFetch(
+    `${BASE}/api/capabilities/mcp/system-connections`,
+  );
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -732,6 +750,19 @@ export async function removeSkillsPackage(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ skills }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+/** Valid slug: lowercase letters, numbers, and hyphens only. */
+export async function uploadSkill(options: {
+  content: string;
+}): Promise<{ path: string; id: string }> {
+  const res = await authFetch(`${BASE}/api/skills/upload`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(options),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();

@@ -3,6 +3,7 @@ import {
   getSkillContent,
   addSkill,
   removeSkills,
+  uploadSkill as uploadSkillFs,
   type SkillEntry,
   type SkillsRunResult,
 } from "./skills-cli.js";
@@ -26,6 +27,7 @@ export interface SkillService {
     skills?: string[];
   }): Promise<SkillsRunResult>;
   remove(skillNames: string[]): Promise<SkillsRunResult>;
+  upload(content: string): Promise<{ path: string; id: string }>;
 }
 
 export function createSkillService(
@@ -65,6 +67,9 @@ export function createSkillService(
     },
     async remove(skillNames) {
       return removeSkills(skillNames);
+    },
+    async upload(content) {
+      return uploadSkillFs(content);
     },
   };
 }

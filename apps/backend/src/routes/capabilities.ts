@@ -3,6 +3,7 @@ import createDebug from "debug";
 import type { AppContext } from "../utils/helpers.js";
 import { getParam } from "../utils/helpers.js";
 import { publish } from "../utils/pubsub.js";
+import { getSystemMcpEntriesWithEnabled } from "../capabilities/mcp/system-mcps.js";
 
 const MCP_RELOAD_REQUEST_CHANNEL = "hooman:mcp-reload:request";
 const debug = createDebug("hooman:routes:capabilities");
@@ -100,6 +101,19 @@ export function registerCapabilityRoutes(app: Express, ctx: AppContext): void {
         });
       } catch (err) {
         debug("get connections error: %o", err);
+        res.status(500).json({ error: (err as Error).message });
+      }
+    },
+  );
+
+  app.get(
+    "/api/capabilities/mcp/system-connections",
+    (_req: Request, res: Response) => {
+      try {
+        const systemConnections = getSystemMcpEntriesWithEnabled();
+        res.json({ systemConnections });
+      } catch (err) {
+        debug("get system connections error: %o", err);
         res.status(500).json({ error: (err as Error).message });
       }
     },
@@ -334,6 +348,22 @@ export function registerCapabilityRoutes(app: Express, ctx: AppContext): void {
         error: (err as Error).message,
         code: 1,
       });
+    }
+  });
+
+  app.post("/api/skills/upload", async (req: Request, res: Response) => {
+    const body = req.body as { content?: string };
+    const content = typeof body?.content === "string" ? body.content : "";
+    if (!content) {
+      res.status(400).json({ error: "Missing or invalid 'content'." });
+      return;
+    }
+    try {
+      const result = await ctx.skillService.upload(content);
+      res.status(201).json({ path: result.path, id: result.id });
+    } catch (err) {
+      debug("skills upload error: %o", err);
+      res.status(400).json({ error: (err as Error).message });
     }
   });
 
