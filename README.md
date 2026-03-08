@@ -100,7 +100,7 @@ No separate database server: Prisma + SQLite. Both **Valkey** and **Chroma** are
 ## Quick start
 
 ```bash
-git clone https://github.com/vaibhavpandeyvpz/hooman.git
+git clone https://github.com/one710/hooman.git
 cd hooman
 yarn install
 yarn build
@@ -127,10 +127,10 @@ For a fresh Ubuntu server, run the installer directly:
 
 ```bash
 # with curl
-curl -fsSL https://raw.githubusercontent.com/vaibhavpandeyvpz/hooman/main/setup-linux.sh | bash
+curl -fsSL https://raw.githubusercontent.com/one710/hooman/main/setup-linux.sh | bash
 
 # or with wget
-wget -qO- https://raw.githubusercontent.com/vaibhavpandeyvpz/hooman/main/setup-linux.sh | bash
+wget -qO- https://raw.githubusercontent.com/one710/hooman/main/setup-linux.sh | bash
 ```
 
 What it asks (minimal prompts):
@@ -249,7 +249,7 @@ docker compose up -d valkey chroma
 **2. Clone, build, and run Hooman**
 
 ```bash
-git clone https://github.com/vaibhavpandeyvpz/hooman.git
+git clone https://github.com/one710/hooman.git
 cd hooman
 docker compose up -d valkey chroma   # required before yarn start
 yarn install
