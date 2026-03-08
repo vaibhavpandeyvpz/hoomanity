@@ -2,7 +2,7 @@
 /**
  * Generate an argon2id hash for WEB_AUTH_PASSWORD_HASH.
  * Run: yarn hash-password   or   yarn hash-password --password=yourpassword
- * Add the printed line to your .env file.
+ * Outputs only the hash (stdout).
  */
 import argon2 from "argon2";
 import { createInterface } from "readline";
@@ -41,11 +41,7 @@ async function main(): Promise<void> {
   }
 
   const hash = await argon2.hash(password.trim(), { type: argon2.argon2id });
-  console.log("\nAdd this line to your .env file:\n");
-  console.log(`WEB_AUTH_PASSWORD_HASH=${hash}`);
-  console.log(
-    "\nAlso set WEB_AUTH_USERNAME and JWT_SECRET in .env to enable web login.",
-  );
+  console.log(hash);
 }
 
 main().catch((err) => {

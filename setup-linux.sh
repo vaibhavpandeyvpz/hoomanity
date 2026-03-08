@@ -240,8 +240,8 @@ hash_web_password() {
       yarn -s hash-password --password=${pass_escaped}
     "
   )"
-  hash_line="$(printf "%s\n" "${output}" | awk -F= '/^WEB_AUTH_PASSWORD_HASH=/{print substr($0, index($0, \"=\")+1); exit}')"
-  if [[ -z "${hash_line}" ]]; then
+  hash_line="$(printf "%s\n" "${output}" | awk 'NF{line=$0} END{print line}')"
+  if [[ -z "${hash_line}" || "${hash_line}" != \$argon2* ]]; then
     echo "Failed to generate WEB_AUTH_PASSWORD_HASH." >&2
     exit 1
   fi
