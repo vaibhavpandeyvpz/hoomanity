@@ -45,6 +45,16 @@ prompt_secret() {
   printf -v "${out_var}" "%s" "${value}"
 }
 
+run_as_user() {
+  local target_user="$1"
+  shift
+  if [[ -n "${SUDO}" ]]; then
+    sudo -u "${target_user}" "$@"
+  else
+    runuser -u "${target_user}" -- "$@"
+  fi
+}
+
 require_ubuntu() {
   if [[ ! -f /etc/os-release ]]; then
     echo "Cannot detect OS. This script supports Ubuntu." >&2
@@ -332,7 +342,7 @@ install_native_valkey() {
 bind 127.0.0.1
 port 6379
 daemonize no
-supervised systemd
+supervised no
 dir /var/lib/valkey
 save 900 1
 save 300 10
@@ -347,11 +357,11 @@ Description=Valkey In-Memory Data Store
 After=network.target
 
 [Service]
-Type=notify
+Type=simple
 User=valkey
 Group=valkey
-ExecStart=/usr/local/bin/valkey-server /etc/valkey/valkey.conf --supervised systemd
-ExecStop=/usr/local/bin/valkey-cli shutdown
+ExecStart=/usr/local/bin/valkey-server /etc/valkey/valkey.conf
+ExecStop=/usr/local/bin/valkey-cli -p 6379 shutdown
 Restart=always
 RestartSec=2
 LimitNOFILE=65535
@@ -373,9 +383,9 @@ install_native_chroma() {
   ${SUDO} mkdir -p /opt/chroma /var/lib/chroma
   ${SUDO} chown -R chroma:chroma /opt/chroma /var/lib/chroma
 
-  ${SUDO} -u chroma python3 -m venv /opt/chroma/.venv
-  ${SUDO} -u chroma /opt/chroma/.venv/bin/pip install --upgrade pip
-  ${SUDO} -u chroma /opt/chroma/.venv/bin/pip install chromadb
+  run_as_user chroma python3 -m venv /opt/chroma/.venv
+  run_as_user chroma /opt/chroma/.venv/bin/pip install --upgrade pip
+  run_as_user chroma /opt/chroma/.venv/bin/pip install chromadb
 
   ${SUDO} tee /etc/chroma.env >/dev/null <<EOF
 IS_PERSISTENT=TRUE
