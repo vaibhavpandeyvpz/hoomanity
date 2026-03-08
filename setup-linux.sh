@@ -5,6 +5,7 @@ REPO_URL="https://github.com/one710/hooman.git"
 APP_USER="hooman"
 APP_HOME=""
 INSTALL_DIR=""
+PUPPETEER_EXECUTABLE_PATH=""
 
 if [[ "${EUID}" -eq 0 ]]; then
   SUDO=""
@@ -62,8 +63,7 @@ prompt_inputs() {
   echo "Press Enter to keep fields empty for local-only install."
   echo
 
-  prompt_line "Frontend domain (e.g. hooman.example.com): " FRONTEND_DOMAIN
-  prompt_line "API domain (e.g. api.hooman.example.com): " API_DOMAIN
+  prompt_line "Public domain (e.g. hooman.example.com, optional): " PUBLIC_DOMAIN
   prompt_line "Dedicated app user [hooman]: " APP_USER
   APP_USER="${APP_USER:-hooman}"
 
@@ -76,14 +76,10 @@ prompt_inputs() {
     exit 1
   fi
 
-  if [[ -n "${FRONTEND_DOMAIN}" || -n "${API_DOMAIN}" ]]; then
-    if [[ -z "${FRONTEND_DOMAIN}" || -z "${API_DOMAIN}" ]]; then
-      echo "If using domains, provide both frontend and API domains." >&2
-      exit 1
-    fi
-    USE_DOMAINS="true"
+  if [[ -n "${PUBLIC_DOMAIN}" ]]; then
+    USE_DOMAIN="true"
   else
-    USE_DOMAINS="false"
+    USE_DOMAIN="false"
   fi
 
   prompt_line "Web auth username [admin]: " WEB_AUTH_USERNAME
@@ -139,8 +135,46 @@ install_system_packages() {
     python3-pip \
     python3-venv \
     golang-go \
-    chromium-browser \
     tar
+}
+
+install_native_browser() {
+  log "Installing native browser (non-snap)"
+
+  if command -v google-chrome-stable >/dev/null 2>&1; then
+    PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome-stable)"
+    return
+  fi
+  if command -v google-chrome >/dev/null 2>&1; then
+    PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)"
+    return
+  fi
+
+  local arch
+  arch="$(dpkg --print-architecture)"
+  if [[ "${arch}" != "amd64" ]]; then
+    log "Skipping automatic browser install on '${arch}' (Google Chrome .deb is amd64-only). Install a native browser manually and set PUPPETEER_EXECUTABLE_PATH if needed."
+    return
+  fi
+
+  ${SUDO} mkdir -p /etc/apt/keyrings
+  if [[ ! -f /etc/apt/keyrings/google-chrome.gpg ]]; then
+    curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
+      | ${SUDO} gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg
+  fi
+
+  ${SUDO} tee /etc/apt/sources.list.d/google-chrome.list >/dev/null <<EOF
+deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main
+EOF
+
+  ${SUDO} apt-get update -y
+  ${SUDO} env DEBIAN_FRONTEND=noninteractive apt-get install -y google-chrome-stable
+
+  if command -v google-chrome-stable >/dev/null 2>&1; then
+    PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome-stable)"
+  elif command -v google-chrome >/dev/null 2>&1; then
+    PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)"
+  fi
 }
 
 install_nvm_node_yarn() {
@@ -207,8 +241,8 @@ hash_web_password() {
 write_env_file() {
   log "Writing .env"
   local api_base vite_api_base
-  if [[ "${USE_DOMAINS}" == "true" ]]; then
-    api_base="https://${API_DOMAIN}"
+  if [[ "${USE_DOMAIN}" == "true" ]]; then
+    api_base="https://${PUBLIC_DOMAIN}"
     vite_api_base="${api_base}"
   else
     api_base="http://localhost:3000"
@@ -226,6 +260,10 @@ WEB_AUTH_USERNAME=${WEB_AUTH_USERNAME}
 WEB_AUTH_PASSWORD_HASH=${WEB_AUTH_PASSWORD_HASH}
 JWT_SECRET=${JWT_SECRET}
 EOF
+
+  if [[ -n "${PUPPETEER_EXECUTABLE_PATH}" ]]; then
+    echo "PUPPETEER_EXECUTABLE_PATH=${PUPPETEER_EXECUTABLE_PATH}" >> "${INSTALL_DIR}/.env"
+  fi
 }
 
 install_node_deps() {
@@ -374,38 +412,33 @@ setup_native_services() {
 }
 
 setup_nginx_and_certs() {
-  if [[ "${USE_DOMAINS}" != "true" ]]; then
+  if [[ "${USE_DOMAIN}" != "true" ]]; then
     log "Skipping nginx/certbot (local-only install)"
     return
   fi
 
   log "Configuring nginx"
-  local frontend_conf api_conf
+  local frontend_conf
   frontend_conf="$(mktemp)"
-  api_conf="$(mktemp)"
 
-  sed "s/hooman.example.com/${FRONTEND_DOMAIN}/g; s#root /var/www/hooman/apps/frontend/dist;#root ${INSTALL_DIR}/apps/frontend/dist;#g" \
-    "${INSTALL_DIR}/deploy/hooman-frontend.conf" > "${frontend_conf}"
-  sed "s/api.hooman.example.com/${API_DOMAIN}/g" \
-    "${INSTALL_DIR}/deploy/hooman-api.conf" > "${api_conf}"
+  sed "s/hooman.example.com/${PUBLIC_DOMAIN}/g; s#root /var/www/hooman/apps/frontend/dist;#root ${INSTALL_DIR}/apps/frontend/dist;#g" \
+    "${INSTALL_DIR}/.nginx/hooman.conf" > "${frontend_conf}"
 
-  ${SUDO} cp "${frontend_conf}" /etc/nginx/sites-available/hooman-frontend.conf
-  ${SUDO} cp "${api_conf}" /etc/nginx/sites-available/hooman-api.conf
-  ${SUDO} ln -sf /etc/nginx/sites-available/hooman-frontend.conf /etc/nginx/sites-enabled/hooman-frontend.conf
-  ${SUDO} ln -sf /etc/nginx/sites-available/hooman-api.conf /etc/nginx/sites-enabled/hooman-api.conf
+  ${SUDO} cp "${frontend_conf}" /etc/nginx/sites-available/hooman.conf
+  ${SUDO} ln -sf /etc/nginx/sites-available/hooman.conf /etc/nginx/sites-enabled/hooman.conf
+  ${SUDO} rm -f /etc/nginx/sites-enabled/hooman-frontend.conf /etc/nginx/sites-enabled/hooman-api.conf
   ${SUDO} rm -f /etc/nginx/sites-enabled/default
   ${SUDO} nginx -t
   ${SUDO} systemctl reload nginx
 
   log "Requesting TLS certificates with certbot"
-  local cert_email="admin@${FRONTEND_DOMAIN}"
+  local cert_email="admin@${PUBLIC_DOMAIN}"
   ${SUDO} certbot --nginx \
     --non-interactive \
     --agree-tos \
     --redirect \
     -m "${cert_email}" \
-    -d "${FRONTEND_DOMAIN}" \
-    -d "${API_DOMAIN}"
+    -d "${PUBLIC_DOMAIN}"
 }
 
 start_pm2() {
@@ -441,9 +474,9 @@ print_summary() {
   log "Setup complete"
   echo "Dedicated app user: ${APP_USER}"
   echo "Install directory: ${INSTALL_DIR}"
-  if [[ "${USE_DOMAINS}" == "true" ]]; then
-    echo "Frontend URL: https://${FRONTEND_DOMAIN}"
-    echo "API URL: https://${API_DOMAIN}"
+  if [[ "${USE_DOMAIN}" == "true" ]]; then
+    echo "App URL: https://${PUBLIC_DOMAIN}"
+    echo "API URL: https://${PUBLIC_DOMAIN}/api"
   else
     echo "Frontend (dev only): run 'yarn dev:frontend' in ${INSTALL_DIR}"
     echo "API health: http://localhost:3000/health"
@@ -460,6 +493,7 @@ main() {
   prompt_inputs
   setup_dedicated_user
   install_system_packages
+  install_native_browser
   clone_or_update_repo
   install_nvm_node_yarn
   install_uv_python

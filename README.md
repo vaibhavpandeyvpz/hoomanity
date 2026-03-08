@@ -135,22 +135,22 @@ wget -qO- https://raw.githubusercontent.com/one710/hooman/main/setup-linux.sh | 
 
 What it asks (minimal prompts):
 
-- `Frontend domain` (optional)
-- `API domain` (optional)
+- `Public domain` (optional; one hostname for both UI and API)
+- `Dedicated app user` (optional; defaults to `hooman`)
 - `Web auth username`
 - `Web auth password`
 
 What it does automatically:
 
-- Installs prerequisites (Node.js via nvm, Yarn, uv + Python, Go, nginx, certbot, Chromium, build tools)
+- Installs prerequisites (Node.js via nvm, Yarn, uv + Python, Go, nginx, certbot, native Google Chrome, build tools)
 - Clones/updates the repo to `~/hooman`
 - Installs dependencies and builds the project
 - Generates `WEB_AUTH_PASSWORD_HASH` using `yarn hash-password`
 - Creates `.env` with sane defaults, including generated `JWT_SECRET`
 - Installs and runs required services (`valkey`, `chroma`) natively as systemd services
 - Starts app processes with PM2 and saves PM2 state
-- If both domains are provided: configures nginx and requests TLS certs via certbot
-- If domains are omitted: performs local-only install (no nginx/certbot setup)
+- If a domain is provided: configures nginx and requests TLS certs via certbot
+- If no domain is provided: performs local-only install (no nginx/certbot setup)
 
 ---
 
@@ -218,7 +218,7 @@ Without these, only localhost can access the web UI and API (except completions 
 
 ## Deployment (server behind nginx)
 
-Run these on the server. Replace `hooman.example.com` and `api.hooman.example.com` with your domains.
+Run these on the server. Replace `hooman.example.com` with your domain.
 
 **1. Install Node, Yarn, Python (uv), Go, Docker**
 
@@ -262,18 +262,16 @@ npx pm2 startup
 npx pm2 save
 ```
 
-Set `VITE_API_BASE` (e.g. `https://api.hooman.example.com`) before `yarn build`.
+Set `VITE_API_BASE` (e.g. `https://hooman.example.com`) before `yarn build`.
 
 **3. Serve frontend and proxy API with nginx**
 
 ```bash
 mkdir -p /var/www/hooman/apps/frontend
 sudo cp -r apps/frontend/dist /var/www/hooman/apps/frontend/
-sudo cp deploy/hooman-frontend.conf /etc/nginx/sites-available/
-sudo cp deploy/hooman-api.conf /etc/nginx/sites-available/
-sudo ln -s /etc/nginx/sites-available/hooman-frontend.conf /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/hooman-api.conf /etc/nginx/sites-enabled/
-# Edit server_name in the conf files, then:
+sudo cp .nginx/hooman.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/hooman.conf /etc/nginx/sites-enabled/
+# Edit server_name in the conf file, then:
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
@@ -281,7 +279,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ```bash
 sudo apt install python3-certbot-nginx
-sudo certbot --nginx -d hooman.example.com -d api.hooman.example.com
+sudo certbot --nginx -d hooman.example.com
 ```
 
 Then open `https://hooman.example.com` and sign in.
