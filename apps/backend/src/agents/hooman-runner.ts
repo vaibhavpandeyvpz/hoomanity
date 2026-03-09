@@ -17,7 +17,7 @@ import {
 } from "../config.js";
 import { buildChannelContext } from "../channels/shared.js";
 import { buildAgentSystemPrompt } from "../utils/prompts.js";
-import { truncateForMax } from "../utils/helpers.js";
+import { runWithTimeout, truncateForMax } from "../utils/helpers.js";
 
 const IMAGE_MIME_TYPES = [
   "image/jpeg",
@@ -388,8 +388,17 @@ export async function createHoomanRunner(options: {
         debug("Tool not found or has no execute: %s", toolName);
         throw new Error(`Tool not found or has no execute: ${toolName}`);
       }
+      const toolTimeoutMs = getConfig().TOOL_TIMEOUT_MS ?? 300_000;
+      const timeoutError = new Error(
+        `Tool "${toolName}" timed out after ${toolTimeoutMs}ms`,
+      );
+      timeoutError.name = "ToolTimeoutError";
       try {
-        const result = await rawTool.execute(toolArgs);
+        const result = await runWithTimeout(
+          () => rawTool.execute!(toolArgs),
+          toolTimeoutMs > 0 ? toolTimeoutMs : null,
+          timeoutError,
+        );
         debug("Tool completed toolName=%s", toolName);
         return result;
       } catch (err) {

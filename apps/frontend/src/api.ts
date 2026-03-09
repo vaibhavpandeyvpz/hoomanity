@@ -501,6 +501,8 @@ export interface AppConfig {
   MAX_INPUT_TOKENS?: number;
   /** Chat timeout in milliseconds. 0 or unset = 300000 (5 min). */
   CHAT_TIMEOUT_MS?: number;
+  /** Tool execution timeout in milliseconds. 0 or unset = 300000 (5 min). */
+  TOOL_TIMEOUT_MS?: number;
   /** Tool approval: "llm" or "static". Default "llm". */
   TOOL_APPROVAL_MODE?: ToolApprovalModeId;
   /** Comma-separated enabled system MCP names (e.g. time,fetch,skills). Toggle in MCP tab. */

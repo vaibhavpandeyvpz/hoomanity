@@ -78,6 +78,8 @@ export interface PersistedConfig {
   MAX_TURNS?: number;
   /** Chat timeout in milliseconds. After this, user gets a timeout message. 0 or unset = 300000 (5 min). */
   CHAT_TIMEOUT_MS?: number;
+  /** Tool execution timeout in milliseconds. 0 or unset = 300000 (5 min). */
+  TOOL_TIMEOUT_MS?: number;
   /** Tool approval: "llm" = format prompt and parse reply with LLM; "static" = fixed template and regex. Default "llm". */
   TOOL_APPROVAL_MODE?: ToolApprovalModeId;
   /** Timeout in ms for the tool-approval format LLM call. 0 or unset = 60000. */
@@ -124,6 +126,7 @@ const DEFAULTS: PersistedConfig = {
   MAX_INPUT_TOKENS: 0,
   MAX_TURNS: 999,
   CHAT_TIMEOUT_MS: 300_000,
+  TOOL_TIMEOUT_MS: 300_000,
   TOOL_APPROVAL_MODE: "llm",
   TOOL_APPROVAL_FORMAT_TIMEOUT_MS: 60_000,
   TOOL_APPROVAL_PARSE_TIMEOUT_MS: 60_000,
@@ -248,6 +251,11 @@ export function updateConfig(patch: Partial<PersistedConfig>): PersistedConfig {
     store.CHAT_TIMEOUT_MS = Math.max(
       0,
       Number(patch.CHAT_TIMEOUT_MS) || DEFAULTS.CHAT_TIMEOUT_MS!,
+    );
+  if (patch.TOOL_TIMEOUT_MS !== undefined)
+    store.TOOL_TIMEOUT_MS = Math.max(
+      0,
+      Number(patch.TOOL_TIMEOUT_MS) || DEFAULTS.TOOL_TIMEOUT_MS!,
     );
   if (
     patch.TOOL_APPROVAL_MODE !== undefined &&
@@ -392,6 +400,11 @@ export async function loadPersisted(): Promise<void> {
         store.CHAT_TIMEOUT_MS = Math.max(
           0,
           Number(parsed.CHAT_TIMEOUT_MS) || DEFAULTS.CHAT_TIMEOUT_MS!,
+        );
+      if (parsed.TOOL_TIMEOUT_MS !== undefined)
+        store.TOOL_TIMEOUT_MS = Math.max(
+          0,
+          Number(parsed.TOOL_TIMEOUT_MS) || DEFAULTS.TOOL_TIMEOUT_MS!,
         );
       if (
         parsed.TOOL_APPROVAL_MODE !== undefined &&

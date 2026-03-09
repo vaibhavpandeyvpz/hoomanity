@@ -49,6 +49,7 @@ export function registerSettingsRoutes(app: Express, ctx: AppContext): void {
       COMPLETIONS_API_KEY: c.COMPLETIONS_API_KEY,
       MAX_INPUT_TOKENS: c.MAX_INPUT_TOKENS,
       CHAT_TIMEOUT_MS: c.CHAT_TIMEOUT_MS,
+      TOOL_TIMEOUT_MS: c.TOOL_TIMEOUT_MS,
       TOOL_APPROVAL_MODE: c.TOOL_APPROVAL_MODE,
       SYSTEM_MCP_SERVERS: c.SYSTEM_MCP_SERVERS,
     });
@@ -104,6 +105,7 @@ export function registerSettingsRoutes(app: Express, ctx: AppContext): void {
         COMPLETIONS_API_KEY: patch.COMPLETIONS_API_KEY as string | undefined,
         MAX_INPUT_TOKENS: patch.MAX_INPUT_TOKENS as number | undefined,
         CHAT_TIMEOUT_MS: patch.CHAT_TIMEOUT_MS as number | undefined,
+        TOOL_TIMEOUT_MS: patch.TOOL_TIMEOUT_MS as number | undefined,
         TOOL_APPROVAL_MODE: patch.TOOL_APPROVAL_MODE as
           | ToolApprovalModeId
           | undefined,
