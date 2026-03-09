@@ -1,16 +1,68 @@
 import { join } from "path";
 import { generateText } from "ai";
+import Tokenizer, { models } from "ai-tokenizer";
+import * as encoding from "ai-tokenizer/encoding";
 import {
   MemoryLayer,
   createSQLiteStorageAdapter,
   type SummaryRequest,
 } from "@one710/recollect";
-import type { RecollectMessage } from "@one710/recollect";
 import type { ModelMessage } from "ai";
 import type { ChatHistoryStore } from "./chat-history.js";
 import { getConfig } from "../config.js";
 import { getHoomanModel } from "../agents/model-provider.js";
 import { WORKSPACE_ROOT } from "../utils/workspace.js";
+
+/** Returns a token counter for the given provider/model; uses o200k_base if model is unknown. */
+function createTokenCounter(
+  provider: string,
+  model: string,
+): (msg: Record<string, unknown>) => number {
+  const modelKey = `${provider}/${model}` as keyof typeof models;
+  const aiModel = models[modelKey];
+  const enc =
+    (aiModel && (encoding as Record<string, unknown>)[aiModel.encoding]) ??
+    encoding.o200k_base;
+  const tokenizer = new Tokenizer(
+    enc as ConstructorParameters<typeof Tokenizer>[0],
+  );
+  return (msg: Record<string, unknown>) => tokenizer.count(JSON.stringify(msg));
+}
+
+/** Returns a summarizer that uses the given model for summary generation. */
+function createSummarizer(
+  model: Parameters<typeof generateText>[0]["model"],
+): (input: SummaryRequest) => Promise<string> {
+  return async (input: SummaryRequest): Promise<string> => {
+    const { text } = await generateText({
+      model,
+      system: input.instructions,
+      prompt: input.summaryPrompt,
+    });
+    return text ?? "";
+  };
+}
+
+/** Render a message as text for the summarizer (role + content snapshot). */
+function renderMessage(msg: Record<string, unknown>): string {
+  const role = msg.role ?? "unknown";
+  const content = msg.content;
+  if (typeof content === "string") return `[${role}]: ${content}`;
+  if (Array.isArray(content)) {
+    const parts = content.map((p: unknown) => {
+      const q = p as Record<string, unknown>;
+      if (q?.type === "text" && typeof q.text === "string") return q.text;
+      if (q?.type === "reasoning") return "[reasoning]";
+      if (q?.type === "tool-call" || q?.type === "tool_call")
+        return `[tool: ${String(q.toolName ?? q.name ?? "?")}]`;
+      if (q?.type === "tool-result" || q?.type === "tool_result")
+        return `[tool result: ${String(q.toolName ?? q.name ?? "?")}]`;
+      return JSON.stringify(p);
+    });
+    return `[${role}]: ${parts.join(" ")}`;
+  }
+  return `[${role}]: ${JSON.stringify(content)}`;
+}
 
 export interface ContextStore {
   /** Persist one user/assistant turn to chat history only (for UI). Use with addTurnToAgentThread when storing full AI SDK messages in memory. */
@@ -31,57 +83,17 @@ export interface ContextStore {
   clearAll(userId: string): Promise<void>;
 }
 
-function toRecollectMessage(msg: ModelMessage): RecollectMessage {
-  const role = msg.role as RecollectMessage["role"];
-  if (typeof msg.content === "string") {
-    return { role, content: msg.content };
-  }
-  if (Array.isArray(msg.content)) {
-    const parts = (msg.content as unknown[]).map((p: unknown) => {
-      const q = p as Record<string, unknown>;
-      if (!q || typeof q !== "object") return { type: "text", text: String(p) };
-      const t = String(q.type ?? "unknown").toLowerCase();
-      if (t === "text" && "text" in q) return { type: "text", text: q.text };
-      if (t === "tool-call" || t === "tool_call") {
-        return {
-          type: "tool-call" as const,
-          toolCallId: (q.toolCallId ?? q.tool_call_id ?? "") as string,
-          toolName: (q.toolName ?? q.name ?? "") as string,
-          input: q.input ?? q.args,
-        };
-      }
-      if (t === "tool-result" || t === "tool_result") {
-        return {
-          type: "tool-result" as const,
-          toolCallId: (q.toolCallId ?? q.tool_call_id ?? "") as string,
-          toolName: (q.toolName ?? q.name ?? "") as string,
-          output: q.output ?? q.result,
-        };
-      }
-      return q as RecollectMessage["content"] extends (infer P)[] ? P : never;
-    });
-    return { role, content: parts };
-  }
-  return { role, content: String(msg.content ?? "") };
-}
-
-function toModelMessage(msg: RecollectMessage): ModelMessage {
-  return { ...msg } as ModelMessage;
-}
-
 async function createMemoryLayer(): Promise<MemoryLayer> {
   const config = getConfig();
   const maxTokens = config.MAX_INPUT_TOKENS || 100_000;
   const model = getHoomanModel(config);
 
-  const summarize = async (input: SummaryRequest): Promise<string> => {
-    const { text } = await generateText({
-      model,
-      system: input.instructions,
-      prompt: input.summaryPrompt,
-    });
-    return text ?? "";
-  };
+  const countTokens = createTokenCounter(
+    config.LLM_PROVIDER,
+    config.CHAT_MODEL,
+  );
+
+  const summarize = createSummarizer(model);
 
   const storage = await createSQLiteStorageAdapter(
     join(WORKSPACE_ROOT, "context.db"),
@@ -90,6 +102,8 @@ async function createMemoryLayer(): Promise<MemoryLayer> {
   return new MemoryLayer({
     maxTokens,
     summarize,
+    countTokens,
+    renderMessage,
     threshold: 0.75,
     storage,
   });
@@ -129,27 +143,16 @@ export async function createContext(
       userId: string,
       messages: ModelMessage[],
     ): Promise<void> {
-      for (const msg of messages) {
-        await memory.addMessage(userId, null, toRecollectMessage(msg));
-      }
+      if (messages.length === 0) return;
+      await memory.addMessages(
+        userId,
+        messages as unknown as Record<string, unknown>[],
+      );
     },
 
     async getThreadForAgent(userId: string): Promise<ModelMessage[]> {
       const messages = await memory.getMessages(userId);
-      return messages.map((msg) => {
-        const m = toModelMessage(msg);
-        if (m.role === "system") {
-          return { ...m, role: "user" as const };
-        }
-        if (
-          m.role === "assistant" &&
-          (m.content == null ||
-            (Array.isArray(m.content) && m.content.length === 0))
-        ) {
-          return { ...m, content: "(empty)" };
-        }
-        return m;
-      });
+      return messages.map((msg) => msg as ModelMessage);
     },
 
     async clearAll(userId: string): Promise<void> {

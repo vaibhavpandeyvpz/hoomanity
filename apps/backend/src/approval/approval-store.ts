@@ -17,6 +17,8 @@ export interface PendingApproval {
   toolArgs: unknown;
   /** Serialized message list at pause (JSON). */
   threadSnapshotJson: string;
+  /** Length of history already in memory at pause. threadSnapshot.slice(historyLength) is the turn not yet persisted. */
+  historyLength?: number;
   /** Approval prompt text we sent (for LLM reply parsing). */
   approvalMessage?: string;
   /** SDK tool call id for building tool result message on resume. */
