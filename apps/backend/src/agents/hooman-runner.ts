@@ -74,7 +74,10 @@ export interface NeedsApprovalPayload {
   toolCallId: string;
   /** Tool id (e.g. connectionId/name) for allow-every-time store; may be same as toolName if not provided. */
   toolId?: string;
+  /** Full thread at pause (history + user message + assistant tool call). Used to resume after approval. */
   threadSnapshot: ModelMessage[];
+  /** Length of history already in memory when we paused. threadSnapshot.slice(historyLength) is the turn not yet persisted. */
+  historyLength: number;
 }
 
 export interface RunChatResult {
@@ -223,21 +226,30 @@ export async function createHoomanRunner(options: {
   return {
     async generate(history, message, options) {
       const input: ModelMessage[] = [...history];
-      const channelContext = buildChannelContext(options?.channel);
-      const userContent = buildUserContentParts(message, options?.attachments);
-      const prompt: ModelMessage = channelContext?.trim()
-        ? {
-            role: "user",
-            content: [
-              {
-                type: "text" as const,
-                text: `### Channel Context\nThe following message originated from an external channel. Details are as below:\n\n${channelContext.trim()}\n\n---\n\n`,
-              },
-              ...userContent,
-            ],
-          }
-        : { role: "user", content: userContent };
-      input.push(prompt);
+      let prompt: ModelMessage | null = null;
+      const hasUserContent =
+        (typeof message === "string" && message.trim() !== "") ||
+        (options?.attachments?.length ?? 0) > 0;
+      if (hasUserContent) {
+        const channelContext = buildChannelContext(options?.channel);
+        const userContent = buildUserContentParts(
+          message ?? "",
+          options?.attachments,
+        );
+        prompt = channelContext?.trim()
+          ? {
+              role: "user",
+              content: [
+                {
+                  type: "text" as const,
+                  text: `### Channel Context\nThe following message originated from an external channel. Details are as below:\n\n${channelContext.trim()}\n\n---\n\n`,
+                },
+                ...userContent,
+              ],
+            }
+          : { role: "user", content: userContent };
+        input.push(prompt);
+      }
 
       const maxSteps = getConfig().MAX_TURNS || 999;
       const agent = new ToolLoopAgent({
@@ -245,6 +257,11 @@ export async function createHoomanRunner(options: {
         instructions: fullSystem,
         tools: wrappedTools,
         stopWhen: stepCountIs(maxSteps),
+        providerOptions: {
+          openai: {
+            include: ["reasoning.encrypted_content"],
+          },
+        },
         experimental_onToolCallStart({ toolCall }) {
           const name =
             toolCall.toolName ?? (toolCall as { name?: string }).name;
@@ -331,6 +348,10 @@ export async function createHoomanRunner(options: {
           ...(response.response?.messages ?? []),
         ];
         const toolId = prefixedNameToToolId?.get(approvalReq.toolName);
+        /** When prompt was added, input = [...history, prompt]; else input = history. Use length - 1 when no prompt so the next persist (after approval) includes the last message in input (the new assistant) plus the tool result we will add. */
+        const historyLength = prompt
+          ? input.length - 1
+          : Math.max(0, input.length - 1);
         return {
           output: "",
           needsApproval: {
@@ -339,11 +360,14 @@ export async function createHoomanRunner(options: {
             toolCallId: approvalReq.toolCallId,
             toolId: toolId ?? approvalReq.toolName,
             threadSnapshot,
+            historyLength,
           },
         };
       }
 
-      const messages: ModelMessage[] = [prompt, ...response.response.messages];
+      const messages: ModelMessage[] = prompt
+        ? [prompt, ...response.response.messages]
+        : [...(response.response?.messages ?? [])];
 
       return {
         output: response.text ?? "",
