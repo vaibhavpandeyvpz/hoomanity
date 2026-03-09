@@ -85,6 +85,8 @@ const ALL_SYSTEM_MCP_CONNECTIONS: MCPConnectionStdio[] = [
     command: "npx",
     args: ["tsx", MEMORY_MCP_SERVER_PATH],
     cwd: DEFAULT_MCP_CWD,
+    // Only universal memory tools; scoped tools require sessionId which the LLM cannot determine.
+    tool_filter: "*_universal_memory",
   },
   {
     id: "_default_schedule",
