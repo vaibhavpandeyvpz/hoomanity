@@ -58,11 +58,10 @@ export async function startSlackAdapter(
     token: config.userToken.trim(),
     socketMode: true,
   });
+  const connectAs = config.connectAs ?? "bot";
 
   let agentIdentity = config.agentIdentity?.trim();
   let profile: SlackUserProfile | undefined = config.profile;
-  const hasProfile =
-    profile && (profile.real_name || profile.name || profile.display_name);
 
   async function fetchProfileForUser(
     userId: string,
@@ -85,25 +84,46 @@ export async function startSlackAdapter(
     }
   }
 
-  if (!agentIdentity) {
+  async function resolveIdentityFromSlack(): Promise<string | undefined> {
     try {
       const auth = await app.client.auth.test();
-      agentIdentity = (auth as { user_id?: string }).user_id ?? "";
-      if (agentIdentity) {
-        profile = await fetchProfileForUser(agentIdentity);
-        if (options?.onAgentIdentityResolved) {
-          options.onAgentIdentityResolved(agentIdentity, profile);
+      let resolved =
+        (auth as { user_id?: string }).user_id?.trim() ||
+        (auth as { user?: string }).user?.trim() ||
+        "";
+
+      if (!resolved && connectAs === "bot") {
+        const botId = (auth as { bot_id?: string }).bot_id?.trim();
+        if (botId) {
+          try {
+            const botInfo = await app.client.bots.info({ bot: botId });
+            resolved =
+              (
+                botInfo as {
+                  bot?: { user_id?: string; id?: string };
+                }
+              ).bot?.user_id?.trim() || "";
+          } catch (e) {
+            debug("bots.info for bot identity failed: %o", e);
+          }
         }
       }
+      return resolved || undefined;
     } catch (e) {
       debug("auth.test failed, agentIdentity unknown: %o", e);
+      return undefined;
     }
-  } else if (!hasProfile && options?.onAgentIdentityResolved) {
+  }
+
+  // In bot mode always re-resolve identity from Slack to avoid stale saved user-mode IDs.
+  if (!agentIdentity || connectAs === "bot") {
+    const resolved = await resolveIdentityFromSlack();
+    if (resolved) agentIdentity = resolved;
+  }
+
+  if (agentIdentity) {
     profile = await fetchProfileForUser(agentIdentity);
-    if (
-      profile &&
-      (profile.real_name || profile.name || profile.display_name)
-    ) {
+    if (options?.onAgentIdentityResolved) {
       options.onAgentIdentityResolved(agentIdentity, profile);
     }
   }
