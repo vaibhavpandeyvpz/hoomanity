@@ -215,7 +215,7 @@ export type ChannelMeta = SlackChannelMeta | WhatsAppChannelMeta;
 
 export interface NormalizedMessagePayload {
   kind: "message";
-  text: string;
+  text: string | string[];
   userId: string;
   /** Resolved attachment content for the agent (name, contentType, data). */
   attachmentContents?: ChatAttachment[];

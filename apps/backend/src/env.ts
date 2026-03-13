@@ -58,6 +58,16 @@ export const env = {
   CHROMA_COLLECTION: str("CHROMA_COLLECTION", "hooman-memory"),
   /** For Docker/remote deployments, allow API access from non-localhost when web auth is NOT enabled. */
   ALLOW_REMOTE_ACCESS: bool("ALLOW_REMOTE_ACCESS", false),
+  /** Debounce window for rapid Slack messages before enqueueing to main event queue. */
+  SLACK_MESSAGE_DEBOUNCE_MS: num(
+    "SLACK_MESSAGE_DEBOUNCE_MS",
+    num("CHANNEL_MESSAGE_DEBOUNCE_MS", 2500),
+  ),
+  /** Debounce window for rapid WhatsApp messages before enqueueing to main event queue. */
+  WHATSAPP_MESSAGE_DEBOUNCE_MS: num(
+    "WHATSAPP_MESSAGE_DEBOUNCE_MS",
+    num("CHANNEL_MESSAGE_DEBOUNCE_MS", 2500),
+  ),
 } as const;
 
 export { BACKEND_ROOT, PROJECT_ROOT, WORKSPACE_ROOT };

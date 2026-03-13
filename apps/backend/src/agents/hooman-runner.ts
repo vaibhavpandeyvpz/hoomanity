@@ -112,7 +112,7 @@ export interface RunChatResult {
 export interface HoomanRunner {
   generate(
     history: AgentInputItem[],
-    message: string,
+    message: string | string[],
     options?: RunChatOptions,
     callbacks?: RunStreamCallbacks,
   ): Promise<RunChatResult>;
@@ -297,29 +297,39 @@ export async function createHoomanRunner(options: {
   return {
     async generate(history, message, options, callbacks) {
       const input: AgentInputItem[] = [...history];
+      const messageParts = Array.isArray(message)
+        ? message.map((m) => m.trim()).filter((m) => m.length > 0)
+        : typeof message === "string" && message.trim().length > 0
+          ? [message.trim()]
+          : [];
       const hasUserContent =
-        (typeof message === "string" && message.trim() !== "") ||
-        (options?.attachments?.length ?? 0) > 0;
+        messageParts.length > 0 || (options?.attachments?.length ?? 0) > 0;
       if (hasUserContent) {
         const channelContext = buildChannelContext(options?.channel);
-        const userContent = buildUserContentParts(
-          message ?? "",
-          options?.attachments,
-        );
-        const prompt: AgentInputItem = {
-          type: "message",
-          role: "user",
-          content: channelContext?.trim()
-            ? [
-                {
-                  type: "input_text",
-                  text: `### Channel Context\nThe following message originated from an external channel. Details are as below:\n\n${channelContext.trim()}\n\n---\n\n`,
-                },
-                ...userContent,
-              ]
-            : userContent,
-        };
-        input.push(prompt);
+        const turns = messageParts.length > 0 ? messageParts : [""];
+        for (let i = 0; i < turns.length; i += 1) {
+          const turnText = turns[i] ?? "";
+          const isLastTurn = i === turns.length - 1;
+          const userContent = buildUserContentParts(
+            turnText,
+            isLastTurn ? options?.attachments : undefined,
+          );
+          const prompt: AgentInputItem = {
+            type: "message",
+            role: "user",
+            content:
+              i === 0 && channelContext?.trim()
+                ? [
+                    {
+                      type: "input_text",
+                      text: `### Channel Context\nThe following message originated from an external channel. Details are as below:\n\n${channelContext.trim()}\n\n---\n\n`,
+                    },
+                    ...userContent,
+                  ]
+                : userContent,
+          };
+          input.push(prompt);
+        }
       }
 
       const result = await run(agent, input, {

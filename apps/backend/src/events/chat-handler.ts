@@ -51,6 +51,25 @@ interface ToolCallFullInfo {
   toolArgs: unknown;
 }
 
+function toTextParts(text: string | string[]): string[] {
+  if (Array.isArray(text)) {
+    return text
+      .map((t) => (typeof t === "string" ? t.trim() : ""))
+      .filter((t) => t.length > 0);
+  }
+  const t = (text ?? "").trim();
+  return t ? [t] : [];
+}
+
+function toLatestText(text: string | string[]): string {
+  const parts = toTextParts(text);
+  return parts[parts.length - 1] ?? "";
+}
+
+function toCombinedText(text: string | string[]): string {
+  return toTextParts(text).join("\n");
+}
+
 /** Collect all tool calls from OpenAI agent history items (function_call). */
 function collectToolCalls(thread: AgentInputItem[]): ToolCallFullInfo[] {
   const out: ToolCallFullInfo[] = [];
@@ -210,7 +229,7 @@ async function runAgentWithSignals(
   params: {
     event: NormalizedEvent;
     history: AgentInputItem[];
-    text: string;
+    text: string | string[];
     runOptions: RunChatOptions;
     timeoutMs: number;
   },
@@ -341,17 +360,20 @@ async function logIncomingMessage(
   auditLog: AuditLog,
   event: NormalizedEvent,
   userId: string,
-  text: string,
+  text: string | string[],
   channelMeta: ChannelMeta | undefined,
   sourceMessageType?: "audio",
 ): Promise<void> {
-  const textPreview = text.length > 100 ? `${text.slice(0, 100)}…` : text;
+  const textCombined = toCombinedText(text);
   await auditLog.appendAuditEntry({
     type: "incoming_message",
     payload: {
       source: event.source,
       userId,
-      textPreview,
+      textPreview:
+        textCombined.length > 100
+          ? `${textCombined.slice(0, 100)}…`
+          : textCombined,
       channel: (channelMeta as { channel?: string } | undefined)?.channel,
       eventId: event.id,
       ...(sourceMessageType ? { sourceMessageType } : {}),
@@ -389,7 +411,7 @@ async function handlePendingApproval(
     pending.toolName,
   );
 
-  const reply = await parsePendingReply(payload.text, pending);
+  const reply = await parsePendingReply(toLatestText(payload.text), pending);
   if (reply === "reject") {
     const consumed = await consumePending(payload.userId, channelKey);
     debug(
@@ -535,7 +557,7 @@ async function handleApprovalReject(
     const assistantText = result.output?.trim() || "I didn't run that tool.";
     await context.addTurnToChatHistory(
       payload.userId,
-      payload.text,
+      toCombinedText(payload.text),
       assistantText,
       {
         userAttachments: payload.attachments,
@@ -556,7 +578,7 @@ async function handleApprovalReject(
         {
           type: "message",
           role: "user",
-          content: [{ type: "input_text", text: payload.text }],
+          content: [{ type: "input_text", text: toCombinedText(payload.text) }],
         },
         {
           type: "message",
@@ -570,7 +592,7 @@ async function handleApprovalReject(
     const assistantText = `Something went wrong: ${msg}. Check API logs.`;
     await context.addTurnToChatHistory(
       payload.userId,
-      payload.text,
+      toCombinedText(payload.text),
       assistantText,
       {
         userAttachments: payload.attachments,
@@ -712,7 +734,7 @@ async function handleApprovalConfirm(
     const assistantText = result.output?.trim() || "Done.";
     await context.addTurnToChatHistory(
       payload.userId,
-      payload.text,
+      toCombinedText(payload.text),
       assistantText,
       {
         userAttachments: payload.attachments,
@@ -733,7 +755,7 @@ async function handleApprovalConfirm(
         {
           type: "message",
           role: "user",
-          content: [{ type: "input_text", text: payload.text }],
+          content: [{ type: "input_text", text: toCombinedText(payload.text) }],
         },
         {
           type: "message",
@@ -864,7 +886,7 @@ async function requestApprovalForTool(
   );
   await context.addTurnToChatHistory(
     payload.userId,
-    payload.text,
+    toCombinedText(payload.text),
     approvalMessage,
     {
       userAttachments: payload.attachments,
@@ -982,7 +1004,7 @@ async function handleNeedsApproval(
   );
   await context.addTurnToChatHistory(
     payload.userId,
-    payload.text,
+    toCombinedText(payload.text),
     approvalMessage,
     {
       userAttachments: payload.attachments,
@@ -1021,11 +1043,11 @@ async function handleAgentSuccess(
     type: "response",
     text: assistantText,
     eventId: event.id,
-    userInput: payload.text,
+    userInput: toCombinedText(payload.text),
   });
   await context.addTurnToChatHistory(
     payload.userId,
-    payload.text,
+    toCombinedText(payload.text),
     assistantText,
     {
       userAttachments: payload.attachments,
@@ -1051,7 +1073,7 @@ async function handleAgentSuccess(
       {
         type: "message",
         role: "user",
-        content: [{ type: "input_text", text: payload.text }],
+        content: [{ type: "input_text", text: toCombinedText(payload.text) }],
       },
       {
         type: "message",
@@ -1096,7 +1118,7 @@ async function handleChatError(
 
   await context.addTurnToChatHistory(
     payload.userId,
-    payload.text,
+    toCombinedText(payload.text),
     assistantText,
     {
       userAttachments: payload.attachments,
@@ -1113,7 +1135,7 @@ async function handleChatError(
     {
       type: "message",
       role: "user",
-      content: [{ type: "input_text", text: payload.text }],
+      content: [{ type: "input_text", text: toCombinedText(payload.text) }],
     },
     {
       type: "message",

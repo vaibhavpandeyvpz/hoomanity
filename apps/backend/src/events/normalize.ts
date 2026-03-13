@@ -30,7 +30,14 @@ export function normalizePayload(
   payload: Record<string, unknown>,
 ): NormalizedPayload {
   if (type === "message.sent") {
-    const text = typeof payload.text === "string" ? payload.text : "";
+    const text = Array.isArray(payload.text)
+      ? (payload.text as unknown[])
+          .filter((p): p is string => typeof p === "string")
+          .map((p) => p.trim())
+          .filter((p) => p.length > 0)
+      : typeof payload.text === "string"
+        ? payload.text
+        : "";
     const userId =
       typeof payload.userId === "string" ? payload.userId : "default";
     const attachmentContents = Array.isArray(payload.attachmentContents)

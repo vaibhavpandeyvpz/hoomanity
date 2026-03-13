@@ -13,7 +13,10 @@ import {
   setAssistantThreadStatus,
 } from "../channels/slack-adapter.js";
 import { createEventQueue } from "../events/event-queue.js";
-import { createQueueDispatcher } from "../events/enqueue.js";
+import {
+  createQueueDispatcher,
+  type QueueDispatcher,
+} from "../events/enqueue.js";
 import { createSubscriber } from "../utils/pubsub.js";
 import { env } from "../env.js";
 import { RESPONSE_DELIVERY_CHANNEL } from "../types.js";
@@ -22,6 +25,7 @@ import { runWorker } from "./bootstrap.js";
 const debug = createDebug("hooman:workers:slack");
 
 let eventQueue: ReturnType<typeof createEventQueue> | null = null;
+let dispatcher: QueueDispatcher | null = null;
 let responseDeliverySubscriber: ReturnType<typeof createSubscriber> | null =
   null;
 
@@ -34,7 +38,17 @@ async function startAdapter(): Promise<void> {
   if (!eventQueue) {
     eventQueue = createEventQueue({ connection: env.REDIS_URL });
   }
-  const dispatcher = createQueueDispatcher(eventQueue);
+  if (dispatcher?.close) {
+    await dispatcher.close();
+  }
+  dispatcher = createQueueDispatcher(eventQueue, {
+    debounce: {
+      connection: env.REDIS_URL,
+      windowsMs: {
+        slack: env.SLACK_MESSAGE_DEBOUNCE_MS,
+      },
+    },
+  });
   try {
     await startSlackAdapter(dispatcher, () => getChannelsConfig().slack, {
       onAgentIdentityResolved(userId, profile) {
@@ -131,6 +145,10 @@ runWorker({
       await eventQueue.close();
       eventQueue = null;
     }
+    if (dispatcher?.close) {
+      await dispatcher.close();
+    }
+    dispatcher = null;
     await stopSlackAdapter();
   },
   onReload: () => startAdapter(),

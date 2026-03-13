@@ -15,7 +15,10 @@ import {
   type WhatsAppConnection,
 } from "../channels/whatsapp-adapter.js";
 import { createEventQueue } from "../events/event-queue.js";
-import { createQueueDispatcher } from "../events/enqueue.js";
+import {
+  createQueueDispatcher,
+  type QueueDispatcher,
+} from "../events/enqueue.js";
 import { createSubscriber, createRpcMessageHandler } from "../utils/pubsub.js";
 import { env } from "../env.js";
 import { RESPONSE_DELIVERY_CHANNEL } from "../types.js";
@@ -29,6 +32,7 @@ const CONNECTION_REQUEST_CHANNEL = "hooman:whatsapp:connection:request";
 const CONNECTION_RESPONSE_CHANNEL = "hooman:whatsapp:connection:response";
 
 let eventQueue: ReturnType<typeof createEventQueue> | null = null;
+let dispatcher: QueueDispatcher | null = null;
 let mcpSubscriber: ReturnType<typeof createSubscriber> | null = null;
 
 /** Connection state for WhatsApp (QR, status, self identity). API reads this via Redis RPC. */
@@ -55,7 +59,17 @@ async function startAdapter(): Promise<void> {
     return;
   }
   eventQueue = createEventQueue({ connection: env.REDIS_URL });
-  const dispatcher = createQueueDispatcher(eventQueue);
+  if (dispatcher?.close) {
+    await dispatcher.close();
+  }
+  dispatcher = createQueueDispatcher(eventQueue, {
+    debounce: {
+      connection: env.REDIS_URL,
+      windowsMs: {
+        whatsapp: env.WHATSAPP_MESSAGE_DEBOUNCE_MS,
+      },
+    },
+  });
   await startWhatsAppAdapter(dispatcher, () => getChannelsConfig().whatsapp, {
     onConnectionUpdate: ({
       status,
@@ -158,6 +172,10 @@ runWorker({
       await eventQueue.close();
       eventQueue = null;
     }
+    if (dispatcher?.close) {
+      await dispatcher.close();
+    }
+    dispatcher = null;
     await stopWhatsAppAdapter();
   },
   onReload: () => startAdapter(),

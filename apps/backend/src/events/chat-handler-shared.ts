@@ -30,7 +30,7 @@ export class ChatTimeoutError extends Error {
 export interface RunAgentFn {
   (
     history: AgentInputItem[],
-    text: string,
+    text: string | string[],
     runOptions?: RunChatOptions,
     timeoutMs?: number | null,
     callbacks?: RunStreamCallbacks,
