@@ -2,7 +2,7 @@
 
 Interactive terminal UI for running and configuring local AI agents (OpenAI Agents SDK, Recollect-backed session memory, MCP, and skills).
 
-**Requirements:** [Node.js](https://nodejs.org/) 20+
+**Requirements:** [Node.js](https://nodejs.org/) 24+
 
 ## Install
 
