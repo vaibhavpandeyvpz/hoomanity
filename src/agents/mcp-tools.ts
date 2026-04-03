@@ -9,6 +9,7 @@ import {
 } from "@openai/agents";
 import slugify from "slugify";
 import type { ApprovalsManager } from "./allowance.js";
+import { syntheticToolFailureOutput } from "./synthetic-tool-result.js";
 
 type McpToolCallDetails = Parameters<FunctionTool["invoke"]>[2];
 
@@ -60,7 +61,11 @@ function wrapFunctionToolWithTimeout(
           : input == null
             ? ""
             : JSON.stringify(input);
-      return t.invoke(runContext, payload, details);
+      try {
+        return await t.invoke(runContext, payload, details);
+      } catch (err) {
+        return syntheticToolFailureOutput(exposedName, err);
+      }
     },
     needsApproval: async (
       runContext: RunContext,

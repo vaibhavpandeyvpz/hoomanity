@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tool, type Tool } from "@openai/agents";
 import { z } from "zod";
+import { syntheticToolFailureOutput } from "../agents/synthetic-tool-result.js";
 import { agentSkillsDir } from "../utils/path-helpers.js";
 
 const readSkillFileParameters = z.object({
@@ -69,8 +70,11 @@ export function createReadSkillFileTool(
     parameters: readSkillFileParameters,
     strict: true,
     execute: async (input) => {
-      const text = await readSkillMdFile(id, input.skill_folder);
-      return text;
+      try {
+        return await readSkillMdFile(id, input.skill_folder);
+      } catch (err) {
+        return syntheticToolFailureOutput("read_skill_file", err);
+      }
     },
     timeoutMs: options?.timeoutMs,
   });

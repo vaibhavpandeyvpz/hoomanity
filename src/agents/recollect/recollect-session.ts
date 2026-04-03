@@ -9,6 +9,7 @@ import type {
 } from "./compaction-notice.js";
 import { RECOLLECT_DEFAULT_SESSION_ID } from "./constants.js";
 import { createAgentMemoryLayer } from "./memory-layer.js";
+import { sanitizeOrphanFunctionCallResults } from "../synthetic-tool-result.js";
 import type { SessionApiUsageBudget } from "./session-api-usage-budget.js";
 
 /**
@@ -64,7 +65,8 @@ export class RecollectSession implements Session {
       limit === undefined || limit <= 0
         ? messages
         : messages.slice(Math.max(0, messages.length - limit));
-    return sliced.map((m) => structuredClone(m) as AgentInputItem);
+    const cloned = sliced.map((m) => structuredClone(m) as AgentInputItem);
+    return sanitizeOrphanFunctionCallResults(cloned);
   }
 
   async addItems(items: AgentInputItem[]): Promise<void> {
