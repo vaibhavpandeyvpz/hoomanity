@@ -64,7 +64,7 @@ export type ProviderConfigDrafts = {
   ollama: OllamaProviderConfig;
 };
 
-/** One line in ~/.hooman/agents.jsonl */
+/** One line in ~/.hoomanity/agents.jsonl */
 export const AgentRegistryEntrySchema = z.object({
   id: z.string().length(8),
   enabled: z.boolean(),

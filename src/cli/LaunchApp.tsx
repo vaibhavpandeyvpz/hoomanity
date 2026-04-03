@@ -138,7 +138,7 @@ export function LaunchApp({ container }: LaunchAppProps) {
           Agent <Text color="cyan">{screen.agentId}</Text> is disabled.
         </Text>
         <Text dimColor>
-          Enable it with <Text color="magenta">hooman configure</Text>.
+          Enable it with <Text color="magenta">hoomanity configure</Text>.
         </Text>
         <KeyHints mode="custom" children="Esc — back to list · Ctrl+C — quit" />
       </Box>
@@ -170,7 +170,7 @@ export function LaunchApp({ container }: LaunchAppProps) {
         <HoomanBanner subtitle="launch" />
         <Text>No agents yet.</Text>
         <Text dimColor>
-          Create one with <Text color="magenta">hooman configure</Text>.
+          Create one with <Text color="magenta">hoomanity configure</Text>.
         </Text>
         <KeyHints mode="quit_only" />
       </Box>

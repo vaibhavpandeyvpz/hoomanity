@@ -17,7 +17,7 @@ import type { SessionApiUsageBudget } from "./session-api-usage-budget.js";
 
 /**
  * Recollect {@link MemoryLayer} with filesystem JSONL under
- * `~/.hooman/agents/<agentId>/sessions/<sessionId>/messages.jsonl` (plus events/stats).
+ * `~/.hoomanity/agents/<agentId>/sessions/<sessionId>/messages.jsonl` (plus events/stats).
  */
 type PendingSummaryUsage = {
   inputTokens: number;

@@ -11,7 +11,7 @@ import { installDefaultSkillForNewAgent } from "./default-skills.js";
 
 export type ProvisionAgentInput = {
   config: AgentConfig;
-  /** Written to ~/.hooman/agents/<id>/INSTRUCTIONS.md */
+  /** Written to ~/.hoomanity/agents/<id>/INSTRUCTIONS.md */
   instructions: string;
 };
 

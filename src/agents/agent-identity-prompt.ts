@@ -1,7 +1,7 @@
 import { loadPromptTemplate } from "../prompts/load-prompt.js";
 
 /**
- * System-instruction appendix: this agent's identity in hooman (agent id + display name).
+ * System-instruction appendix: this agent's identity in hoomanity (agent id + display name).
  * Template: {@link ../prompts/identity.md}.
  */
 export async function buildAgentIdentityInstructionsAppendix(input: {

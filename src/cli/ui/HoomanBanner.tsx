@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Box, Text, useStdout } from "ink";
 
-const TITLE = "hooman";
+const TITLE = "hoomanity";
 const PALETTE = ["magenta", "cyan", "blue", "green", "yellow"] as const;
 
 /** Rainbow title (static colors; no timer — avoids Ink redraws that break terminal scroll). */

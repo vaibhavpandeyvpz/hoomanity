@@ -1,6 +1,6 @@
 /**
  * Renders a stored agent message as plain text for Recollect summarization
- * (ported from prior hooman backend `context.ts`).
+ * (ported from prior `context.ts` backend).
  */
 export function renderMessageForSummary(msg: Record<string, unknown>): string {
   const itemType = typeof msg.type === "string" ? msg.type : "";

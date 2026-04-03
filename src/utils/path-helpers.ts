@@ -8,7 +8,7 @@ import {
 } from "../agents/files.js";
 
 function resolveHoomanRoot(): string {
-  return join(homedir(), ".hooman");
+  return join(homedir(), ".hoomanity");
 }
 
 export function agentsJsonlPath(): string {
@@ -20,7 +20,7 @@ export function agentDir(agentId: string): string {
 }
 
 /**
- * Recollect filesystem sessions: `~/.hooman/agents/<id>/sessions/` (same agent tree as config).
+ * Recollect filesystem sessions: `~/.hoomanity/agents/<id>/sessions/` (same agent tree as config).
  * Per-session dirs use `FilesystemStorageAdapter`: `<sessionId>/messages.jsonl`, etc.
  */
 export function agentRecollectSessionsRoot(agentId: string): string {
@@ -43,7 +43,7 @@ export function agentToolsPath(agentId: string): string {
   return join(agentDir(agentId), AGENT_TOOLS_BASENAME);
 }
 
-/** Skills root for an agent: `~/.hooman/agents/<id>/skills/` (`npx skills … -a openclaw`). */
+/** Skills root for an agent: `~/.hoomanity/agents/<id>/skills/` (`npx skills … -a openclaw`). */
 export function agentSkillsDir(agentId: string): string {
   return join(agentDir(agentId), "skills");
 }

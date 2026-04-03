@@ -54,7 +54,7 @@ type ChatMessage =
     };
 
 const AGENT_DISABLED_MSG =
-  "This agent is disabled. Enable it with `hooman configure` before running.";
+  "This agent is disabled. Enable it with `hoomanity configure` before running.";
 
 function exitOrQuit(onExit: RunAgentAppProps["onExit"]): void {
   if (onExit) {
@@ -538,7 +538,7 @@ export function RunAgentApp({
           <HoomanBanner subtitle="chat" />
           <Text>
             No enabled agents. Enable one with{" "}
-            <Text color="magenta">hooman configure</Text>, then try again.
+            <Text color="magenta">hoomanity configure</Text>, then try again.
           </Text>
           <KeyHints mode="quit_only" />
         </Box>
@@ -549,7 +549,7 @@ export function RunAgentApp({
         <HoomanBanner subtitle="chat" />
         <Text>No agents yet.</Text>
         <Text dimColor>
-          Create one with <Text color="magenta">hooman configure</Text>.
+          Create one with <Text color="magenta">hoomanity configure</Text>.
         </Text>
         <KeyHints mode="quit_only" />
       </Box>

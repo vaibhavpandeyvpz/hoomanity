@@ -1,19 +1,19 @@
 {
-  "name": "hooman",
+  "name": "hoomanity",
   "version": "0.1.0",
-  "description": "Interactive CLI for multi-agent setups. Run `hooman` to pick an agent; `hooman configure` for create/edit, skills, MCP, and settings.",
+  "description": "Interactive CLI for multi-agent setups. Run `hoomanity` to pick an agent; `hoomanity configure` for create/edit, skills, MCP, and settings.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vaibhavpandeyvpz/hooman.git"
+    "url": "git+https://github.com/vaibhavpandeyvpz/hoomanity.git"
   },
   "bugs": {
-    "url": "https://github.com/vaibhavpandeyvpz/hooman/issues"
+    "url": "https://github.com/vaibhavpandeyvpz/hoomanity/issues"
   },
-  "homepage": "https://github.com/vaibhavpandeyvpz/hooman#readme",
+  "homepage": "https://github.com/vaibhavpandeyvpz/hoomanity#readme",
   "type": "module",
   "bin": {
-    "hooman": "./dist/cli.js"
+    "hoomanity": "./dist/cli.js"
   },
   "files": [
     "dist"

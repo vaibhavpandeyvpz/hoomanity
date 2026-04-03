@@ -1,4 +1,4 @@
-# hooman
+# hoomanity
 
 Interactive terminal UI for running and configuring local AI agents (OpenAI Agents SDK, Recollect-backed session memory, MCP, and skills).
 
@@ -7,32 +7,32 @@ Interactive terminal UI for running and configuring local AI agents (OpenAI Agen
 ## Install
 
 ```bash
-npm install -g hooman
+npm install -g hoomanity
 ```
 
 Run the main menu:
 
 ```bash
-hooman
+hoomanity
 ```
 
 Open the configuration wizard (agents, MCP, timeouts, provider credentials):
 
 ```bash
-hooman configure
+hoomanity configure
 ```
 
 ## Use with npx (no global install)
 
 ```bash
-npx hooman
-npx hooman configure
+npx hoomanity
+npx hoomanity configure
 ```
 
 ## Data on disk
 
-- Agent registry and configs: `~/.hooman/` (per-agent folders, `agents.jsonl`, etc.)
-- Recollect session files: `~/.hooman/agents/<AGENT_ID>/sessions/`
+- Agent registry and configs: `~/.hoomanity/` (per-agent folders, `agents.jsonl`, etc.)
+- Recollect session files: `~/.hoomanity/agents/<AGENT_ID>/sessions/`
 
 API keys can be stored in agent config via **configure** or supplied via provider-specific environment variables (see the wizard hints for OpenAI, Anthropic, Bedrock, Ollama).
 
@@ -47,7 +47,7 @@ npm publish
 
 `prepublishOnly` runs a clean `npm run build` (`rimraf dist`, `tsc`, copy prompts) before pack/publish.
 
-If the unscoped name `hooman` is already taken on the registry, use a scoped name (e.g. `@your-org/hooman`), set `"name"` in `package.json`, and document `npx @your-org/hooman` for users.
+If the unscoped name `hoomanity` is already taken on the registry, use a scoped name (e.g. `@your-org/hoomanity`), set `"name"` in `package.json`, and document `npx @your-org/hoomanity` for users.
 
 ### Install from a Git clone
 

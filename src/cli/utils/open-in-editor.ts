@@ -9,7 +9,7 @@ import tty from "node:tty";
  * then returns the file contents. Restores TTY raw mode for Ink after the editor closes.
  */
 export function openEditorWithInitialContent(initial: string): string {
-  const dir = mkdtempSync(join(tmpdir(), "hooman-inst-"));
+  const dir = mkdtempSync(join(tmpdir(), "hoomanity-inst-"));
   const file = join(dir, "INSTRUCTIONS.md");
   writeFileSync(file, initial, "utf8");
 

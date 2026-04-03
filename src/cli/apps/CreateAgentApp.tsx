@@ -277,7 +277,7 @@ export function CreateAgentApp({
           instructions: instructionsBody,
         });
         setMessage(
-          `Created agent ${agentId} (enabled). ~/.hooman/agents/${agentId}/ (see INSTRUCTIONS.md)`,
+          `Created agent ${agentId} (enabled). ~/.hoomanity/agents/${agentId}/ (see INSTRUCTIONS.md)`,
         );
       }
     } catch (e) {
