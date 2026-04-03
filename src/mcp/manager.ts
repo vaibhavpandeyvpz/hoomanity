@@ -130,15 +130,15 @@ export async function createForAgent(
       close: async () => {},
     };
   }
-  const bundle = await connectMcpServers(created, {
+  const servers = await connectMcpServers(created, {
     connectInParallel: true,
     dropFailed: true,
     strict: false,
     ...connectOpts,
   });
   return {
-    // `bundle.all` includes servers that failed to connect; tools must use `active` only.
-    servers: bundle.active,
-    close: () => bundle.close(),
+    // `servers.all` includes servers that failed to connect; tools must use `active` only.
+    servers: servers.active,
+    close: () => servers.close(),
   };
 }

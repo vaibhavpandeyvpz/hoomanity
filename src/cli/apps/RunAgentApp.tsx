@@ -29,6 +29,7 @@ import {
   DEFAULT_MAX_CONTEXT_TOKENS,
   resolvedMaxContextTokens,
 } from "../../agents/timeouts.js";
+import { formatCaughtException } from "../../agents/synthetic-tool-result.js";
 
 export type RunAgentAppProps = {
   readonly container: HoomanContainer;
@@ -419,7 +420,7 @@ export function RunAgentApp({
         }
         setRegistryRows(items);
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(formatCaughtException(e));
         setStep("error");
       } finally {
         setLoadingList(false);
@@ -478,7 +479,7 @@ export function RunAgentApp({
         setStep("chat");
       } catch (e) {
         setMessages((m) => stripFailedAssistantTail(m));
-        setError(e instanceof Error ? e.message : String(e));
+        setError(formatCaughtException(e));
         setStep("error");
       }
     })();
@@ -605,13 +606,20 @@ export function RunAgentApp({
   }
 
   if (step === "error") {
+    const detailLines = (error ?? "").split("\n");
     return (
       <Box flexDirection="column">
         <HoomanBanner subtitle="chat" />
         <Text bold color="red">
           Error
         </Text>
-        <Text color="red">{error}</Text>
+        <Box flexDirection="column" marginTop={1}>
+          {detailLines.map((line, i) => (
+            <Text key={i} color="red">
+              {line.length > 0 ? line : " "}
+            </Text>
+          ))}
+        </Box>
         <KeyHints mode="quit_only" />
       </Box>
     );
@@ -657,7 +665,7 @@ export function RunAgentApp({
         setStep("chat");
       } catch (e) {
         setMessages((m) => stripFailedAssistantTail(m));
-        setError(e instanceof Error ? e.message : String(e));
+        setError(formatCaughtException(e));
         setStep("error");
       }
     })();
