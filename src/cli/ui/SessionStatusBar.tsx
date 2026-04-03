@@ -26,6 +26,8 @@ export type SessionStatusBarProps = {
   readonly contextWindow: number | null;
   readonly elapsedRunningSec: number | null;
   readonly isRunning: boolean;
+  /** Rough output tok/s while the model streams (char-based estimate). */
+  readonly streamingOutputTpsEst: number | null;
 };
 
 const BAR_LEN = 14;
@@ -48,10 +50,19 @@ function pctCtxLeft(sessionTokens: number, window: number | null): string {
   return `${100 - p}% ctx left`;
 }
 
+function formatEstTps(tps: number): string {
+  if (tps < 10) {
+    return tps.toFixed(1);
+  }
+  return String(Math.round(tps));
+}
+
 function WorkingStatus({
   elapsedRunningSec,
+  streamingOutputTpsEst,
 }: {
   readonly elapsedRunningSec: number;
+  readonly streamingOutputTpsEst: number | null;
 }) {
   const [frame, setFrame] = useState(0);
   useEffect(() => {
@@ -67,7 +78,14 @@ function WorkingStatus({
       <Text bold color="yellow">
         {WORKING_SPINNER[frame]}
       </Text>{" "}
-      working {elapsedRunningSec}s · esc to leave
+      working {elapsedRunningSec}s
+      {streamingOutputTpsEst != null ? (
+        <>
+          {" "}
+          <Text dimColor>· ~{formatEstTps(streamingOutputTpsEst)} tok/s</Text>
+        </>
+      ) : null}
+      {" · "}esc to leave
     </Text>
   );
 }
@@ -84,6 +102,7 @@ export function SessionStatusBar({
   contextWindow,
   elapsedRunningSec,
   isRunning,
+  streamingOutputTpsEst,
 }: SessionStatusBarProps) {
   const filled =
     contextWindow != null && contextWindow > 0
@@ -110,7 +129,10 @@ export function SessionStatusBar({
           </Text>
         </Box>
         {isRunning && elapsedRunningSec != null ? (
-          <WorkingStatus elapsedRunningSec={elapsedRunningSec} />
+          <WorkingStatus
+            elapsedRunningSec={elapsedRunningSec}
+            streamingOutputTpsEst={streamingOutputTpsEst}
+          />
         ) : (
           <Text dimColor wrap="truncate-end">
             · ready

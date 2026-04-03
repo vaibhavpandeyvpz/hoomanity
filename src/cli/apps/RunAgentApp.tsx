@@ -271,6 +271,7 @@ export function RunAgentApp({
   const [compactionNotice, setCompactionNotice] = useState<string | null>(null);
   const compactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [liveReasoning, setLiveReasoning] = useState("");
+  const [streamingTpsEst, setStreamingTpsEst] = useState<number | null>(null);
 
   const attachRecollectCompactionUi = useCallback((open: OpenAgentSession) => {
     open.session.setCompactionNotify((p) => {
@@ -285,6 +286,14 @@ export function RunAgentApp({
       setSessionTokensSum(open.session.getRecordedApiUsageTotal());
     });
   }, []);
+
+  const streamUiCallbacks = useMemo(
+    () => ({
+      onReasoningUpdate: setLiveReasoning,
+      onStreamingOutputTpsEst: setStreamingTpsEst,
+    }),
+    [],
+  );
 
   const streamingCallbacks = useMemo(
     () => ({
@@ -449,6 +458,7 @@ export function RunAgentApp({
         { role: "assistant", text: "" },
       ]);
       setLiveReasoning("");
+      setStreamingTpsEst(null);
       try {
         await closeSession(sessionRef.current);
         sessionRef.current = null;
@@ -463,7 +473,7 @@ export function RunAgentApp({
           (text) => {
             setMessages((m) => updateLastAssistant(m, text));
           },
-          { ...streamingCallbacks, onReasoningUpdate: setLiveReasoning },
+          { ...streamingCallbacks, ...streamUiCallbacks },
         );
         setStep("chat");
       } catch (e) {
@@ -478,6 +488,7 @@ export function RunAgentApp({
     idInit,
     mcpApprovalPrompt,
     promptInit,
+    streamUiCallbacks,
     streamingCallbacks,
   ]);
 
@@ -582,6 +593,7 @@ export function RunAgentApp({
                 setLastTurnTokens(null);
                 setCompactionNotice(null);
                 setLiveReasoning("");
+                setStreamingTpsEst(null);
                 setStep("chat");
               })();
             }}
@@ -621,6 +633,7 @@ export function RunAgentApp({
       }
       setStep("running");
       setLiveReasoning("");
+      setStreamingTpsEst(null);
       setMessages((m) => [
         ...m,
         { role: "user", text: t },
@@ -639,7 +652,7 @@ export function RunAgentApp({
           (text) => {
             setMessages((m) => updateLastAssistant(m, text));
           },
-          { ...streamingCallbacks, onReasoningUpdate: setLiveReasoning },
+          { ...streamingCallbacks, ...streamUiCallbacks },
         );
         setStep("chat");
       } catch (e) {
@@ -764,6 +777,9 @@ export function RunAgentApp({
         contextWindow={ctxWin}
         elapsedRunningSec={step === "running" ? runningElapsedSec : null}
         isRunning={step === "running" && !mcpApprovalInfo}
+        streamingOutputTpsEst={
+          step === "running" && !mcpApprovalInfo ? streamingTpsEst : null
+        }
       />
       <KeyHints
         mode="custom"

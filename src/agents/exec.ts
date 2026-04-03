@@ -13,6 +13,10 @@ import { resolvedAgentTimeouts, resolvedMaxTurns } from "./timeouts.js";
 const TOOL_ARGS_PREVIEW_MAX = 220;
 const TOOL_RESULT_PREVIEW_MAX = 180;
 
+/** Rough output-token estimate for live tok/s (API does not stream per-chunk usage). */
+const STREAM_TPS_CHARS_PER_TOKEN_EST = 4;
+const STREAM_TPS_MIN_ELAPSED_MS = 280;
+
 function truncatePreview(s: string, max: number): string {
   const t = s.trim();
   if (t.length <= max) {
@@ -237,6 +241,11 @@ export async function runAgentSessionTurnStreaming(
     readonly onToolCallEnd?: (info: ToolCallEndInfo) => void;
     /** Live reasoning/thinking text while the model streams (e.g. OpenAI reasoning deltas). */
     readonly onReasoningUpdate?: (reasoningSoFar: string) => void;
+    /**
+     * Estimated output tok/s while assistant text streams (~chars/4 over wall time since first delta).
+     * Cleared to `null` when the turn finishes.
+     */
+    readonly onStreamingOutputTpsEst?: (tokensPerSec: number | null) => void;
   },
 ): Promise<string> {
   const input = prompt.trim();
@@ -254,6 +263,7 @@ export async function runAgentSessionTurnStreaming(
 
   let accumulated = "";
   let reasoningAccum = "";
+  let firstOutputTextAtMs: number | null = null;
 
   const clearReasoningUi = (): void => {
     if (reasoningAccum.length > 0) {
@@ -278,6 +288,18 @@ export async function runAgentSessionTurnStreaming(
             clearReasoningUi();
           }
           accumulated += parsed.delta;
+          const now = Date.now();
+          if (firstOutputTextAtMs === null) {
+            firstOutputTextAtMs = now;
+          }
+          const elapsed = now - firstOutputTextAtMs;
+          if (elapsed >= STREAM_TPS_MIN_ELAPSED_MS && accumulated.length > 0) {
+            const estTok = Math.ceil(
+              accumulated.length / STREAM_TPS_CHARS_PER_TOKEN_EST,
+            );
+            const sec = elapsed / 1000;
+            options?.onStreamingOutputTpsEst?.(estTok / Math.max(sec, 1e-6));
+          }
           onTextUpdate(accumulated);
         }
       } else if (ev.type === "run_item_stream_event") {
@@ -309,5 +331,6 @@ export async function runAgentSessionTurnStreaming(
     return out;
   } finally {
     options?.onReasoningUpdate?.("");
+    options?.onStreamingOutputTpsEst?.(null);
   }
 }
