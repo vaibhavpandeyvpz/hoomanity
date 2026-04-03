@@ -1,18 +1,4 @@
-import { useEffect, useState } from "react";
 import { Box, Text } from "ink";
-
-const WORKING_SPINNER = [
-  "⠋",
-  "⠙",
-  "⠹",
-  "⠸",
-  "⠼",
-  "⠴",
-  "⠦",
-  "⠧",
-  "⠇",
-  "⠏",
-] as const;
 
 export type SessionStatusBarProps = {
   readonly agentName: string;
@@ -64,21 +50,13 @@ function WorkingStatus({
   readonly elapsedRunningSec: number;
   readonly streamingOutputTpsEst: number | null;
 }) {
-  const [frame, setFrame] = useState(0);
-  useEffect(() => {
-    const id = setInterval(
-      () => setFrame((n) => (n + 1) % WORKING_SPINNER.length),
-      100,
-    );
-    return () => clearInterval(id);
-  }, []);
   return (
     <Text color="yellow" dimColor wrap="truncate-end">
       ·{" "}
       <Text bold color="yellow">
-        {WORKING_SPINNER[frame]}
+        working
       </Text>{" "}
-      working {elapsedRunningSec}s
+      {elapsedRunningSec}s
       {streamingOutputTpsEst != null ? (
         <>
           {" "}
