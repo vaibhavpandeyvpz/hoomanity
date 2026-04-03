@@ -30,6 +30,7 @@ type Step =
   | "mcp"
   | "maxturns"
   | "maxcontext"
+  | "reasoning"
   | "reset-confirm"
   | "error";
 
@@ -154,7 +155,8 @@ export const AgentTimeoutsApp: FC<AgentTimeoutsAppProps> = ({
           step === "tool" ||
           step === "mcp" ||
           step === "maxturns" ||
-          step === "maxcontext"
+          step === "maxcontext" ||
+          step === "reasoning"
         ) {
           setDraft("");
           setStep("menu");
@@ -171,7 +173,8 @@ export const AgentTimeoutsApp: FC<AgentTimeoutsAppProps> = ({
         step === "tool" ||
         step === "mcp" ||
         step === "maxturns" ||
-        step === "maxcontext",
+        step === "maxcontext" ||
+        step === "reasoning",
     },
   );
 
@@ -207,6 +210,27 @@ export const AgentTimeoutsApp: FC<AgentTimeoutsAppProps> = ({
     try {
       const prev = cfg ?? (await readConfig(agentId));
       const next: AgentConfig = { ...prev, maxContextTokens };
+      await writeConfig(agentId, next);
+      setCfg(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const persistReasoningEnabled = async (
+    mode: "default" | "on" | "off",
+  ): Promise<void> => {
+    setError(null);
+    try {
+      const prev = cfg ?? (await readConfig(agentId));
+      const next: AgentConfig = { ...prev };
+      if (mode === "default") {
+        delete next.reasoningEnabled;
+      } else if (mode === "on") {
+        next.reasoningEnabled = true;
+      } else {
+        next.reasoningEnabled = false;
+      }
       await writeConfig(agentId, next);
       setCfg(next);
     } catch (e) {
@@ -471,6 +495,65 @@ export const AgentTimeoutsApp: FC<AgentTimeoutsAppProps> = ({
   const mcpSec = Math.round(resolved.mcpConnectTimeoutMs / 1000);
   const maxCtx = resolvedMaxContextTokens(cfg);
 
+  function reasoningMenuLabel(v: AgentConfig["reasoningEnabled"]): string {
+    if (v === false) {
+      return "off";
+    }
+    if (v === true) {
+      return "on (explicit)";
+    }
+    return "default (on)";
+  }
+
+  if (step === "reasoning") {
+    return (
+      <Box flexDirection="column">
+        <HoomanBanner subtitle="configure · limits" />
+        <Text bold color="magenta">
+          Reasoning / thinking
+        </Text>
+        <Text dimColor>
+          Controls streamed thinking (e.g. Ollama Gemma) and OpenAI reasoning
+          effort. Current: {reasoningMenuLabel(cfg.reasoningEnabled)}.
+        </Text>
+        {error ? (
+          <Box marginTop={1}>
+            <Text color="red">{error}</Text>
+          </Box>
+        ) : null}
+        <Box marginTop={1}>
+          <SelectInput
+            items={[
+              {
+                label: "Default — enabled when the model supports it",
+                value: "default",
+              },
+              {
+                label: "On — force enable where applicable",
+                value: "on",
+              },
+              {
+                label: "Off — disable reasoning/thinking",
+                value: "off",
+              },
+            ]}
+            onSelect={(item) => {
+              void (async () => {
+                await persistReasoningEnabled(
+                  item.value as "default" | "on" | "off",
+                );
+                setStep("menu");
+              })();
+            }}
+          />
+        </Box>
+        <Box marginTop={1}>
+          <Text dimColor>Esc — menu · Ctrl+C — quit</Text>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box flexDirection="column">
       <HoomanBanner subtitle="configure · limits" />
@@ -508,6 +591,10 @@ export const AgentTimeoutsApp: FC<AgentTimeoutsAppProps> = ({
             value: "maxcontext",
           },
           {
+            label: `Reasoning / thinking — ${reasoningMenuLabel(cfg.reasoningEnabled)}`,
+            value: "reasoning",
+          },
+          {
             label: RESET_LIMITS_LABEL,
             value: "reset",
           },
@@ -525,7 +612,13 @@ export const AgentTimeoutsApp: FC<AgentTimeoutsAppProps> = ({
           }
           setDraft("");
           setStep(
-            item.value as "turn" | "tool" | "mcp" | "maxturns" | "maxcontext",
+            item.value as
+              | "turn"
+              | "tool"
+              | "mcp"
+              | "maxturns"
+              | "maxcontext"
+              | "reasoning",
           );
         }}
       />

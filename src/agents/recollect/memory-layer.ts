@@ -9,6 +9,7 @@ import { create as createLlmModel } from "../../providers/factory.js";
 import type { LlmProviderRegistry } from "../../providers/registry.js";
 import { agentRecollectSessionsRoot } from "../../utils/path-helpers.js";
 import type { AgentConfig } from "../types.js";
+import { agentModelSettings } from "../model-settings.js";
 import { resolvedMaxContextTokens } from "../timeouts.js";
 import type { CompactionNotifierRef } from "./compaction-notice.js";
 import { RECOLLECT_DEFAULT_THRESHOLD } from "./constants.js";
@@ -51,6 +52,7 @@ export async function createAgentMemoryLayer(
       name: "recollect-summarizer",
       instructions: input.instructions,
       model,
+      modelSettings: agentModelSettings(config),
     });
     const result = await summarizeRunner.run(agent, input.summaryPrompt, {
       maxTurns: 2,

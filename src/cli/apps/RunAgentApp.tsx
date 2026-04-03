@@ -22,6 +22,7 @@ import type {
 } from "../../agents/allowance.js";
 import { HoomanBanner } from "../ui/HoomanBanner.js";
 import { KeyHints } from "../ui/KeyHints.js";
+import { ReasoningStrip } from "../ui/ReasoningStrip.js";
 import { SessionStatusBar } from "../ui/SessionStatusBar.js";
 import { formatRecollectCompactionLine } from "../../agents/recollect/compaction-notice.js";
 import {
@@ -269,6 +270,7 @@ export function RunAgentApp({
   const [runningElapsedSec, setRunningElapsedSec] = useState(0);
   const [compactionNotice, setCompactionNotice] = useState<string | null>(null);
   const compactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [liveReasoning, setLiveReasoning] = useState("");
 
   const attachRecollectCompactionUi = useCallback((open: OpenAgentSession) => {
     open.session.setCompactionNotify((p) => {
@@ -446,6 +448,7 @@ export function RunAgentApp({
         { role: "user", text: promptInit },
         { role: "assistant", text: "" },
       ]);
+      setLiveReasoning("");
       try {
         await closeSession(sessionRef.current);
         sessionRef.current = null;
@@ -460,7 +463,7 @@ export function RunAgentApp({
           (text) => {
             setMessages((m) => updateLastAssistant(m, text));
           },
-          streamingCallbacks,
+          { ...streamingCallbacks, onReasoningUpdate: setLiveReasoning },
         );
         setStep("chat");
       } catch (e) {
@@ -578,6 +581,7 @@ export function RunAgentApp({
                 setSessionTokensSum(0);
                 setLastTurnTokens(null);
                 setCompactionNotice(null);
+                setLiveReasoning("");
                 setStep("chat");
               })();
             }}
@@ -616,6 +620,7 @@ export function RunAgentApp({
         return;
       }
       setStep("running");
+      setLiveReasoning("");
       setMessages((m) => [
         ...m,
         { role: "user", text: t },
@@ -634,7 +639,7 @@ export function RunAgentApp({
           (text) => {
             setMessages((m) => updateLastAssistant(m, text));
           },
-          streamingCallbacks,
+          { ...streamingCallbacks, onReasoningUpdate: setLiveReasoning },
         );
         setStep("chat");
       } catch (e) {
@@ -690,6 +695,11 @@ export function RunAgentApp({
             step === "running" &&
             i === messages.length - 1 &&
             m.text === "";
+          const showReasoningUnderAgent =
+            m.role === "assistant" &&
+            step === "running" &&
+            i === messages.length - 1 &&
+            liveReasoning.length > 0;
           return (
             <Box key={i} flexDirection="column" marginBottom={1}>
               <Box flexDirection="row">
@@ -702,6 +712,9 @@ export function RunAgentApp({
                 </Text>
                 {isPendingAssistant ? <BrailleSpinner /> : null}
               </Box>
+              {showReasoningUnderAgent ? (
+                <ReasoningStrip text={liveReasoning} />
+              ) : null}
               <Text>{m.text || (isPendingAssistant ? "" : "(empty)")}</Text>
             </Box>
           );

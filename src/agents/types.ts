@@ -48,6 +48,11 @@ export const AgentConfigSchema = z.object({
    * Assumed context window size (tokens) for the status bar usage bar. Default 50K when omitted.
    */
   maxContextTokens: z.number().int().min(1024).max(10_000_000).optional(),
+  /**
+   * When false, disables reasoning/thinking where supported (Ollama `think`, OpenAI reasoning effort).
+   * When true or omitted, uses provider defaults (Ollama requests thinking; OpenAI default reasoning).
+   */
+  reasoningEnabled: z.boolean().optional(),
 });
 
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;

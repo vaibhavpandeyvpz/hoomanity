@@ -65,12 +65,16 @@ export class OllamaLlmProvider implements ILlmProvider {
     model: string,
   ): LanguageModelV3 {
     const modelId = model.trim();
-    const o = options as Partial<OllamaProviderConfig>;
+    const reasoningEnabled = options.reasoningEnabled;
+    const o = { ...options } as Record<string, unknown> &
+      Partial<OllamaProviderConfig>;
+    delete o.reasoningEnabled;
     const provider = createOllama({
       baseURL: o.baseURL?.trim() || undefined,
       apiKey: o.apiKey?.trim() || undefined,
     });
-    return provider(modelId);
+    const useThink = reasoningEnabled !== false;
+    return provider(modelId, useThink ? { think: true } : {});
   }
 
   create(

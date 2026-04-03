@@ -7,6 +7,7 @@ import {
   createRecollectSession,
   type RecollectSession,
 } from "./recollect/recollect-session.js";
+import { resolvedReasoningEnabled } from "./model-settings.js";
 import { resolvedAgentTimeouts, resolvedMaxTurns } from "./timeouts.js";
 
 const TOOL_ARGS_PREVIEW_MAX = 220;
@@ -127,6 +128,52 @@ function formatFinalOutput(final: unknown): string {
   return JSON.stringify(final);
 }
 
+/** Delta from OpenAI Responses, AI SDK stream parts (Ollama/Anthropic/etc.), or chat-completions. */
+function extractReasoningDeltaFromRawModelStream(ev: {
+  readonly type: string;
+  readonly data: { readonly type: string; readonly event?: unknown };
+}): string | null {
+  if (ev.type !== "raw_model_stream_event") {
+    return null;
+  }
+  const { data } = ev;
+  if (
+    data.type !== "model" ||
+    data.event == null ||
+    typeof data.event !== "object"
+  ) {
+    return null;
+  }
+  const e = data.event as {
+    type?: string;
+    delta?: unknown;
+    choices?: Array<{ delta?: Record<string, unknown> }>;
+  };
+  if (
+    e.type === "reasoning-delta" &&
+    typeof e.delta === "string" &&
+    e.delta.length > 0
+  ) {
+    return e.delta;
+  }
+  if (
+    (e.type === "response.reasoning_text.delta" ||
+      e.type === "response.reasoning_summary_text.delta") &&
+    typeof e.delta === "string" &&
+    e.delta.length > 0
+  ) {
+    return e.delta;
+  }
+  const choice = e.choices?.[0]?.delta;
+  if (choice && typeof choice === "object" && "reasoning" in choice) {
+    const r = choice.reasoning;
+    if (typeof r === "string" && r.length > 0) {
+      return r;
+    }
+  }
+  return null;
+}
+
 export type OpenAgentSession = {
   readonly agentId: string;
   readonly agentContainer: AgentContainer;
@@ -188,6 +235,8 @@ export async function runAgentSessionTurnStreaming(
     readonly onTurnComplete?: (usage: TurnUsageSnapshot) => void;
     readonly onToolCallStart?: (info: ToolCallStartInfo) => void;
     readonly onToolCallEnd?: (info: ToolCallEndInfo) => void;
+    /** Live reasoning/thinking text while the model streams (e.g. OpenAI reasoning deltas). */
+    readonly onReasoningUpdate?: (reasoningSoFar: string) => void;
   },
 ): Promise<string> {
   const input = prompt.trim();
@@ -195,6 +244,7 @@ export async function runAgentSessionTurnStreaming(
   const cfg = await readConfig(open.agentId);
   const timeouts = resolvedAgentTimeouts(cfg);
   const maxTurns = resolvedMaxTurns(cfg);
+  const streamReasoning = resolvedReasoningEnabled(cfg);
   const streamed = await run(agent, input, {
     session: open.session,
     stream: true,
@@ -203,40 +253,61 @@ export async function runAgentSessionTurnStreaming(
   });
 
   let accumulated = "";
+  let reasoningAccum = "";
 
-  for await (const ev of streamed) {
-    if (
-      ev.type === "raw_model_stream_event" &&
-      ev.data.type === "output_text_delta"
-    ) {
-      const parsed = protocol.StreamEventTextStream.parse(ev.data);
-      accumulated += parsed.delta;
-      onTextUpdate(accumulated);
-    } else if (ev.type === "run_item_stream_event") {
-      if (ev.name === "tool_called") {
-        const info = extractToolCallStart(ev.item);
-        if (info) {
-          options?.onToolCallStart?.(info);
+  const clearReasoningUi = (): void => {
+    if (reasoningAccum.length > 0) {
+      reasoningAccum = "";
+      options?.onReasoningUpdate?.("");
+    }
+  };
+
+  try {
+    for await (const ev of streamed) {
+      if (ev.type === "raw_model_stream_event") {
+        const rd = streamReasoning
+          ? extractReasoningDeltaFromRawModelStream(ev)
+          : null;
+        if (rd) {
+          reasoningAccum += rd;
+          options?.onReasoningUpdate?.(reasoningAccum);
         }
-      } else if (ev.name === "tool_output") {
-        const info = extractToolOutputEnd(ev.item);
-        if (info) {
-          options?.onToolCallEnd?.(info);
+        if (ev.data.type === "output_text_delta") {
+          const parsed = protocol.StreamEventTextStream.parse(ev.data);
+          if (streamReasoning && parsed.delta.length > 0) {
+            clearReasoningUi();
+          }
+          accumulated += parsed.delta;
+          onTextUpdate(accumulated);
+        }
+      } else if (ev.type === "run_item_stream_event") {
+        if (ev.name === "tool_called") {
+          const info = extractToolCallStart(ev.item);
+          if (info) {
+            options?.onToolCallStart?.(info);
+          }
+        } else if (ev.name === "tool_output") {
+          const info = extractToolOutputEnd(ev.item);
+          if (info) {
+            options?.onToolCallEnd?.(info);
+          }
         }
       }
     }
-  }
-  await streamed.completed;
+    await streamed.completed;
 
-  const u = streamed.runContext.usage;
-  options?.onTurnComplete?.({
-    inputTokens: u.inputTokens,
-    outputTokens: u.outputTokens,
-    totalTokens: u.totalTokens,
-    requests: u.requests,
-  });
-  const finalFormatted = formatFinalOutput(streamed.finalOutput);
-  const out = accumulated.length > 0 ? accumulated : finalFormatted;
-  onTextUpdate(out);
-  return out;
+    const u = streamed.runContext.usage;
+    options?.onTurnComplete?.({
+      inputTokens: u.inputTokens,
+      outputTokens: u.outputTokens,
+      totalTokens: u.totalTokens,
+      requests: u.requests,
+    });
+    const finalFormatted = formatFinalOutput(streamed.finalOutput);
+    const out = accumulated.length > 0 ? accumulated : finalFormatted;
+    onTextUpdate(out);
+    return out;
+  } finally {
+    options?.onReasoningUpdate?.("");
+  }
 }

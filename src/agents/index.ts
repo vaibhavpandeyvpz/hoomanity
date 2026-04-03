@@ -4,6 +4,7 @@ import type { CreateForAgentOptions } from "../mcp/manager.js";
 import { read as readConfig } from "./config.js";
 import { read as readInstructions } from "./instructions.js";
 import { mcpServersToTimedTools } from "./mcp-tools.js";
+import { agentModelSettings } from "./model-settings.js";
 import { resolvedAgentTimeouts } from "./timeouts.js";
 import { create as createLlmModel } from "../providers/factory.js";
 import type { LlmProviderRegistry } from "../providers/registry.js";
@@ -105,6 +106,7 @@ export async function create(
       name: config.name,
       instructions,
       model,
+      modelSettings: agentModelSettings(config),
       tools: [readSkillFileTool, ...tools],
     });
   };

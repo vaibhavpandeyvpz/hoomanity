@@ -30,6 +30,9 @@ export function create(
   registry: LlmProviderLookup,
   config: AgentConfig,
 ): Model {
-  const opts = agentProviderOptions(config);
+  const opts = {
+    ...agentProviderOptions(config),
+    reasoningEnabled: config.reasoningEnabled,
+  };
   return registry.get(config.provider).create(opts, config.model.trim());
 }
