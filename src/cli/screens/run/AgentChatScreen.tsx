@@ -129,13 +129,15 @@ export function AgentChatScreen({
 
         <Footer mcpCount={mcpStats?.mcp} skillsCount={mcpStats?.skills} />
         <KeyHints mode="custom">
-          enter — send · esc{" "}
-          {session.state.isRunning
-            ? "— cancel prompt"
-            : onBack
-              ? "— menu"
-              : "— leave"}{" "}
-          · ctrl+c — quit
+          <Text dimColor>
+            enter — send · esc{" "}
+            {session.state.isRunning
+              ? "— cancel prompt"
+              : onBack
+                ? "— menu"
+                : "— leave"}{" "}
+            · ctrl+c — quit
+          </Text>
         </KeyHints>
       </Box>
     </SessionProvider>

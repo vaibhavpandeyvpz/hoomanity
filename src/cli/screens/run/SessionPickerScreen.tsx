@@ -42,7 +42,7 @@ function DeleteConfirmItem({
 }) {
   if (value === "yes") {
     return (
-      <Text color={isSelected ? theme.error : theme.dim} bold={isSelected}>
+      <Text color={theme.error} bold={isSelected}>
         {label}
       </Text>
     );
@@ -144,14 +144,15 @@ export function SessionPickerScreen({
         <HoomanBanner subtitle="sessions" />
         <Text bold>Delete session?</Text>
         <Text>
-          <Text color={theme.accentPrimary}>{pendingDeleteId}</Text>
-          <Text color={theme.dim}> — this cannot be undone</Text>
+          This will delete the session{" "}
+          <Text color={theme.accentPrimary}>{pendingDeleteId}</Text>. This
+          cannot be undone.
         </Text>
         <Box marginTop={1}>
           <SelectInput
             items={[
               { label: "No", value: "no" },
-              { label: "Yes, delete", value: "yes" },
+              { label: "Yes", value: "yes" },
             ]}
             itemComponent={
               DeleteConfirmItem as FC<{
@@ -174,7 +175,9 @@ export function SessionPickerScreen({
             }}
           />
         </Box>
-        <KeyHints mode="custom">esc — cancel</KeyHints>
+        <KeyHints mode="custom">
+          <Text dimColor>esc — cancel</Text>
+        </KeyHints>
       </Box>
     );
   }
@@ -213,7 +216,9 @@ export function SessionPickerScreen({
         />
       </Box>
       <KeyHints mode="custom">
-        ↑↓ · enter — open · d — delete · esc — back · ctrl+c — quit
+        <Text dimColor>↑↓ · enter — open · </Text>
+        <Text color={theme.error}>d — delete</Text>
+        <Text dimColor> · esc — back · ctrl+c — quit</Text>
       </KeyHints>
     </Box>
   );

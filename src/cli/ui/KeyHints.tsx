@@ -20,7 +20,7 @@ export function KeyHints({ mode = "back_quit", children }: KeyHintsProps) {
   if (mode === "custom" && children) {
     return (
       <Box marginTop={1}>
-        <Text dimColor> {children} </Text>
+        <Text> {children} </Text>
       </Box>
     );
   }

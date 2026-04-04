@@ -412,7 +412,9 @@ export function ConfigureScreen({ container }: ConfigureScreenProps) {
         </Box>
         <KeyHints
           mode="custom"
-          children="esc — back without deleting · ctrl+c — quit"
+          children={
+            <Text dimColor>esc — back without deleting · ctrl+c — quit</Text>
+          }
         />
       </Box>
     );

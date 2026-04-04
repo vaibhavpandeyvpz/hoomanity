@@ -106,7 +106,9 @@ export function SelectAgentScreen({ onSelect, onExit }: Props) {
         <SelectInput items={items} onSelect={(item) => onSelect(item.value)} />
       </Box>
       <KeyHints mode="custom">
-        ↑↓ · enter — start chat · esc — leave · ctrl+c — quit
+        <Text dimColor>
+          ↑↓ · enter — start chat · esc — leave · ctrl+c — quit
+        </Text>
       </KeyHints>
     </Box>
   );
