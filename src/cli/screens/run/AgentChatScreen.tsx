@@ -14,6 +14,7 @@ import { theme } from "../../ui/theme.js";
 
 type Props = {
   agentId: string;
+  sessionId?: string;
   initialPrompt?: string;
   onBack?: () => void;
   onExit: () => void;
@@ -21,6 +22,7 @@ type Props = {
 
 export function AgentChatScreen({
   agentId,
+  sessionId,
   initialPrompt,
   onBack,
   onExit,
@@ -28,7 +30,7 @@ export function AgentChatScreen({
   const { mcpApprovalInfo, mcpApprovalPrompt, completeMcpApproval } =
     useMcpApproval();
 
-  const session = useAgentSession(agentId, mcpApprovalPrompt);
+  const session = useAgentSession(agentId, mcpApprovalPrompt, sessionId);
   const mcpStats = useMcpStats(agentId);
 
   const [prompt, setPrompt] = useState(initialPrompt || "");

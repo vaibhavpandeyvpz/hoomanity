@@ -196,7 +196,10 @@ export type OpenAgentSession = {
 export async function openAgentSession(
   container: HoomanContainer,
   agentId: string,
-  options?: { mcpApprovalPrompt?: McpApprovalPrompt },
+  options?: {
+    mcpApprovalPrompt?: McpApprovalPrompt;
+    sessionId?: string;
+  },
 ): Promise<OpenAgentSession> {
   const id = agentId.toUpperCase();
   const cfg = await readConfig(id);
@@ -204,6 +207,7 @@ export async function openAgentSession(
     id,
     cfg,
     container.llmRegistry,
+    options?.sessionId,
   );
   const approvals = await ApprovalsManager.open(id);
   approvals.setPromptHandler(options?.mcpApprovalPrompt ?? null);

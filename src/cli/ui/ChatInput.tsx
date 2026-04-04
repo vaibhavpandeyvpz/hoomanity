@@ -18,13 +18,7 @@ export function ChatInput({
   isActive = true,
 }: Props) {
   return (
-    <Box
-      flexDirection="row"
-      borderStyle="round"
-      borderColor={theme.accentPrimary}
-      paddingX={1}
-      marginTop={1}
-    >
+    <Box flexDirection="row">
       <Text color={theme.accentPrimary} bold>
         ›{" "}
       </Text>

@@ -7,7 +7,7 @@ import type {
   CompactionNotifierRef,
   RecollectCompactionUiPayload,
 } from "./compaction-notice.js";
-import { RECOLLECT_DEFAULT_SESSION_ID } from "./constants.js";
+import { generateSessionId } from "./constants.js";
 import { createAgentMemoryLayer } from "./memory-layer.js";
 import { sanitizeOrphanFunctionCallResults } from "../synthetic-tool-result.js";
 import type { SessionApiUsageBudget } from "./session-api-usage-budget.js";
@@ -23,7 +23,7 @@ export class RecollectSession implements Session {
 
   constructor(
     memory: MemoryLayer,
-    sessionId: string = RECOLLECT_DEFAULT_SESSION_ID,
+    sessionId: string = generateSessionId(),
     notifierRef?: CompactionNotifierRef,
     usageBudget?: SessionApiUsageBudget,
   ) {
@@ -112,8 +112,9 @@ export async function createRecollectSession(
   agentId: string,
   config: AgentConfig,
   llmRegistry: LlmProviderRegistry,
-  sessionId: string = RECOLLECT_DEFAULT_SESSION_ID,
+  sessionId?: string,
 ): Promise<RecollectSession> {
+  const sid = sessionId || generateSessionId();
   const notifierRef: CompactionNotifierRef = { current: null };
   const usageBudget: SessionApiUsageBudget = { total: 0 };
   const memory = await createAgentMemoryLayer(
@@ -123,5 +124,5 @@ export async function createRecollectSession(
     notifierRef,
     usageBudget,
   );
-  return new RecollectSession(memory, sessionId, notifierRef, usageBudget);
+  return new RecollectSession(memory, sid, notifierRef, usageBudget);
 }

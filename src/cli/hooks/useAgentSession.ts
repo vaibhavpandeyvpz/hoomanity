@@ -119,6 +119,7 @@ function toolCallRowFromStart(
 export function useAgentSession(
   agentId: string,
   mcpApprovalPrompt: McpApprovalPrompt,
+  sessionId?: string,
 ) {
   const container = useContainer();
 
@@ -269,6 +270,7 @@ export function useAgentSession(
           if (!sessionRef.current) {
             sessionRef.current = await openAgentSession(container, agentId, {
               mcpApprovalPrompt,
+              sessionId,
             });
             attachRecollectCompactionUi(sessionRef.current);
           }
@@ -316,6 +318,7 @@ export function useAgentSession(
       container,
       isRunning,
       mcpApprovalPrompt,
+      sessionId,
       streamUiCallbacks,
       streamingCallbacks,
     ],

@@ -24,7 +24,7 @@ export function HoomanBanner({
     const rule = "─".repeat(availableSpace);
 
     return (
-      <Box flexDirection="row" marginBottom={1} width={cols}>
+      <Box flexDirection="row" width={cols}>
         <Text color={theme.headerText} backgroundColor={theme.headerBg} bold>
           {` ${TITLE} `}
         </Text>
