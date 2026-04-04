@@ -1,41 +1,30 @@
 import { useEffect, useState } from "react";
 import { Text } from "ink";
 import { theme } from "./theme.js";
+import cliSpinners, { type SpinnerName } from "cli-spinners";
 
 type SpinnerProps = {
-  type?: "braille" | "dots" | "pulse" | "arc" | "bounce" | "aesthetic";
+  type?: SpinnerName;
   color?: string;
   bold?: boolean;
 };
 
 export function Spinner({
-  type = "braille",
+  type = "dots",
   color = theme.accentPrimary,
   bold = true,
 }: SpinnerProps) {
-  const frames =
-    type === "braille"
-      ? ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-      : type === "dots"
-        ? ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"]
-        : type === "arc"
-          ? ["◜", "◠", "◝", "◞", "◡", "◟"]
-          : type === "bounce"
-            ? ["⠁", "⠂", "⠄", "⡀", "⢀", "⠠", "⠐", "⠈"]
-            : type === "aesthetic"
-              ? ["▹▹▹", "▸▹▹", "▹▸▹", "▹▹▸"]
-              : ["", "·", "··", "···"];
-
-  const intervalMs = type === "pulse" ? 200 : 80;
+  const spinner = cliSpinners[type] || cliSpinners.dots;
+  const { frames, interval } = spinner;
 
   const [i, setI] = useState(0);
 
   useEffect(() => {
     const id = setInterval(() => {
       setI((x) => (x + 1) % frames.length);
-    }, intervalMs);
+    }, interval);
     return () => clearInterval(id);
-  }, [frames.length, intervalMs]);
+  }, [frames.length, interval]);
 
   return (
     <Text color={color} bold={bold}>

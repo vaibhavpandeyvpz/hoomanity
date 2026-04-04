@@ -69,7 +69,7 @@ export function Footer({
         <Box>
           {isRunning ? (
             <StatusBarSection>
-              <Spinner type="pulse" color={theme.accentSecondary} />{" "}
+              <Spinner type="binary" color={theme.accentSecondary} />{" "}
               {runningElapsedSec}s
               {streamingTpsEst != null
                 ? ` · ~${streamingTpsEst.toFixed(1)} tk/s`

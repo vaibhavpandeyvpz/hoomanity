@@ -19,7 +19,7 @@ function ThinkingStatus() {
 
   return (
     <Box flexDirection="row" marginLeft={1}>
-      <Spinner type="aesthetic" color={theme.accentPrimary} />
+      <Spinner type="star" color={theme.accentPrimary} />
       <Text color={theme.dim}> {THINKING_VERBS[i]}...</Text>
     </Box>
   );
