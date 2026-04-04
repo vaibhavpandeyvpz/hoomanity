@@ -9,12 +9,12 @@ import {
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
-import type { HoomanContainer } from "../container.js";
-import { HoomanBanner } from "../ui/HoomanBanner.js";
-import type { SkillListEntry } from "../../skills/registry.js";
-import type { SearchSkill } from "../../skills/utils/search-skills-api.js";
+import type { HoomanContainer } from "../../container.js";
+import { HoomanBanner } from "../../ui/HoomanBanner.js";
+import type { SkillListEntry } from "../../../skills/registry.js";
+import type { SearchSkill } from "../../../skills/utils/search-skills-api.js";
 
-export type SkillsAppProps = {
+export type SkillsScreenProps = {
   readonly container: HoomanContainer;
   readonly agentId: string;
   readonly onBack: () => void;
@@ -73,7 +73,11 @@ function formatInstalls(count: number): string {
   return `${count} install${count === 1 ? "" : "s"}`;
 }
 
-export function SkillsApp({ container, agentId, onBack }: SkillsAppProps) {
+export function SkillsScreen({
+  container,
+  agentId,
+  onBack,
+}: SkillsScreenProps) {
   const [view, setView] = useState<View>("list");
   const [rows, setRows] = useState<SkillListEntry[]>([]);
   const [loading, setLoading] = useState(true);

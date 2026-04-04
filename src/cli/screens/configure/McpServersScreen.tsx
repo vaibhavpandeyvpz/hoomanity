@@ -9,12 +9,12 @@ import {
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
-import type { HoomanContainer } from "../container.js";
-import { HoomanBanner } from "../ui/HoomanBanner.js";
-import type { McpListEntry } from "../../mcp/registry.js";
-import type { McpServerEntry, McpUrlTransport } from "../../mcp/types.js";
+import type { HoomanContainer } from "../../container.js";
+import { HoomanBanner } from "../../ui/HoomanBanner.js";
+import type { McpListEntry } from "../../../mcp/registry.js";
+import type { McpServerEntry, McpUrlTransport } from "../../../mcp/types.js";
 
-export type McpServersAppProps = {
+export type McpServersScreenProps = {
   readonly container: HoomanContainer;
   readonly agentId: string;
   readonly onBack: () => void;
@@ -111,11 +111,11 @@ function clearsUrl(
   };
 }
 
-export function McpServersApp({
+export function McpServersScreen({
   container,
   agentId,
   onBack,
-}: McpServersAppProps) {
+}: McpServersScreenProps) {
   const [view, setView] = useState<View>("list");
   const [rows, setRows] = useState<McpListEntry[]>([]);
   const [loading, setLoading] = useState(true);

@@ -5,8 +5,8 @@ import TextInput from "ink-text-input";
 import {
   read as readConfig,
   write as writeConfig,
-} from "../../agents/config.js";
-import type { AgentConfig, AgentTimeouts } from "../../agents/types.js";
+} from "../../../agents/config.js";
+import type { AgentConfig, AgentTimeouts } from "../../../agents/types.js";
 import {
   DEFAULT_AGENT_TIMEOUTS,
   DEFAULT_MAX_CONTEXT_TOKENS,
@@ -14,10 +14,10 @@ import {
   resolvedAgentTimeouts,
   resolvedMaxContextTokens,
   resolvedMaxTurns,
-} from "../../agents/timeouts.js";
-import { HoomanBanner } from "../ui/HoomanBanner.js";
+} from "../../../agents/timeouts.js";
+import { HoomanBanner } from "../../ui/HoomanBanner.js";
 
-export type AgentTimeoutsAppProps = {
+export type AgentTimeoutsScreenProps = {
   readonly agentId: string;
   readonly onBack: () => void;
 };
@@ -108,7 +108,7 @@ function ResetLimitsMenuItem({
   return <Text color={isSelected ? "cyan" : undefined}>{label}</Text>;
 }
 
-export const AgentTimeoutsApp: FC<AgentTimeoutsAppProps> = ({
+export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
   agentId,
   onBack,
 }) => {

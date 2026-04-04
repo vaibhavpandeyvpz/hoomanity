@@ -12,25 +12,25 @@ import TextInput from "ink-text-input";
 import {
   read as readConfig,
   write as writeConfig,
-} from "../../agents/config.js";
-import { read, write } from "../../agents/instructions.js";
-import { provision } from "../../agents/provision.js";
-import { openEditorWithInitialContent } from "../utils/open-in-editor.js";
-import type { HoomanContainer } from "../container.js";
+} from "../../../agents/config.js";
+import { read, write } from "../../../agents/instructions.js";
+import { provision } from "../../../agents/provision.js";
+import { openEditorWithInitialContent } from "../../utils/open-in-editor.js";
+import type { HoomanContainer } from "../../container.js";
 import type {
   AnthropicProviderConfig,
   BedrockProviderConfig,
   ModelProvider,
   OllamaProviderConfig,
   OpenAIProviderConfig,
-} from "../../providers/types.js";
-import { createProviderWizard } from "../../providers/index.js";
-import type { ProviderWizardField } from "../../providers/types.js";
-import { finalizeAgentConfig } from "../utils/finalize-agent-config.js";
-import { HoomanBanner } from "../ui/HoomanBanner.js";
-import { KeyHints } from "../ui/KeyHints.js";
+} from "../../../providers/types.js";
+import { createProviderWizard } from "../../../providers/index.js";
+import type { ProviderWizardField } from "../../../providers/types.js";
+import { finalizeAgentConfig } from "../../utils/finalize-agent-config.js";
+import { HoomanBanner } from "../../ui/HoomanBanner.js";
+import { KeyHints } from "../../ui/KeyHints.js";
 
-export type CreateAgentAppProps = {
+export type CreateAgentScreenProps = {
   readonly container: HoomanContainer;
   readonly mode?: "create" | "edit";
   readonly editAgentId?: string;
@@ -99,7 +99,7 @@ function setProviderField(
   }
 }
 
-function finishOrExit(onFinished: CreateAgentAppProps["onFinished"]): void {
+function finishOrExit(onFinished: CreateAgentScreenProps["onFinished"]): void {
   if (onFinished) {
     onFinished();
   } else {
@@ -107,13 +107,13 @@ function finishOrExit(onFinished: CreateAgentAppProps["onFinished"]): void {
   }
 }
 
-export function CreateAgentApp({
+export function CreateAgentScreen({
   container,
   mode = "create",
   editAgentId,
   onFinished,
   onBack,
-}: CreateAgentAppProps) {
+}: CreateAgentScreenProps) {
   const { llmRegistry } = container;
   const isEdit = mode === "edit" && Boolean(editAgentId);
 

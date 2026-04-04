@@ -2,8 +2,8 @@
 import { setTracingDisabled } from "@openai/agents";
 import { render } from "ink";
 import { createContainer } from "./cli/container.js";
-import { ConfigureApp } from "./cli/ConfigureApp.js";
-import { LaunchApp } from "./cli/LaunchApp.js";
+import { ConfigureScreen } from "./cli/screens/configure/ConfigureScreen.js";
+import { RunScreen } from "./cli/screens/run/RunScreen.js";
 
 setTracingDisabled(true);
 
@@ -14,9 +14,9 @@ async function main(): Promise<void> {
   const ctn = createContainer();
   const { waitUntilExit } = render(
     isConfigure ? (
-      <ConfigureApp container={ctn} />
+      <ConfigureScreen container={ctn} />
     ) : (
-      <LaunchApp container={ctn} />
+      <RunScreen container={ctn} />
     ),
     { exitOnCtrlC: false },
   );

@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState, type FC } from "react";
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
-import { read as readConfig } from "../agents/config.js";
-import { list, remove, toggle } from "../agents/registry.js";
-import type { HoomanContainer } from "./container.js";
-import { AgentTimeoutsApp } from "./apps/AgentTimeoutsApp.js";
-import { CreateAgentApp } from "./apps/CreateAgentApp.js";
-import { RunAgentApp } from "./apps/RunAgentApp.js";
-import { SkillsApp } from "./apps/SkillsApp.js";
-import { McpServersApp } from "./apps/McpServersApp.js";
-import { HoomanBanner } from "./ui/HoomanBanner.js";
-import { KeyHints } from "./ui/KeyHints.js";
+import { read as readConfig } from "../../../agents/config.js";
+import { list, remove, toggle } from "../../../agents/registry.js";
+import type { HoomanContainer } from "../../container.js";
+import { AgentTimeoutsScreen } from "./AgentTimeoutsScreen.js";
+import { CreateAgentScreen } from "./CreateAgentScreen.js";
+import { RunScreen } from "../run/RunScreen.js";
+import { SkillsScreen } from "./SkillsScreen.js";
+import { McpServersScreen } from "./McpServersScreen.js";
+import { HoomanBanner } from "../../ui/HoomanBanner.js";
+import { KeyHints } from "../../ui/KeyHints.js";
+import { theme } from "../../ui/theme.js";
 
-export type ConfigureAppProps = {
+export type ConfigureScreenProps = {
   readonly container: HoomanContainer;
 };
 
@@ -43,7 +44,7 @@ function HomeSelectItem({
   value,
   isSelected,
 }: HomeSelectItemProps) {
-  const color = isSelected ? "blue" : undefined;
+  const color = isSelected ? theme.accentPrimary : undefined;
   if (value === "__create__") {
     return <Text color={color}>{label}</Text>;
   }
@@ -55,13 +56,13 @@ function HomeSelectItem({
     return (
       <Text color={color}>
         {strikeName ? (
-          <Text strikethrough dimColor>
+          <Text strikethrough color={theme.dim}>
             {name}
           </Text>
         ) : (
           name
         )}{" "}
-        <Text dimColor>[{id}]</Text>
+        <Text color={theme.dim}>[{id}]</Text>
       </Text>
     );
   }
@@ -79,12 +80,14 @@ function DeleteConfirmSelectItem({
 }) {
   if (value === "yes") {
     return (
-      <Text color="red" bold={isSelected}>
+      <Text color={theme.error} bold={isSelected}>
         {label}
       </Text>
     );
   }
-  return <Text color={isSelected ? "blue" : undefined}>{label}</Text>;
+  return (
+    <Text color={isSelected ? theme.accentPrimary : undefined}>{label}</Text>
+  );
 }
 
 function AgentMenuSelectItem({
@@ -98,15 +101,17 @@ function AgentMenuSelectItem({
 }) {
   if (value === "delete") {
     return (
-      <Text color="red" bold={isSelected}>
+      <Text color={theme.error} bold={isSelected}>
         {label}
       </Text>
     );
   }
-  return <Text color={isSelected ? "blue" : undefined}>{label}</Text>;
+  return (
+    <Text color={isSelected ? theme.accentPrimary : undefined}>{label}</Text>
+  );
 }
 
-export function ConfigureApp({ container }: ConfigureAppProps) {
+export function ConfigureScreen({ container }: ConfigureScreenProps) {
   const [screen, setScreen] = useState<MainScreen>({ type: "home" });
   const [listVersion, setListVersion] = useState(0);
   const [agents, setAgents] = useState<AgentRow[]>([]);
@@ -225,13 +230,13 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
   }, [agents]);
 
   if (screen.type === "create") {
-    return <CreateAgentApp container={container} onFinished={goHome} />;
+    return <CreateAgentScreen container={container} onFinished={goHome} />;
   }
 
   if (screen.type === "edit") {
     const row = agents.find((a) => a.id === screen.agentId);
     return (
-      <CreateAgentApp
+      <CreateAgentScreen
         container={container}
         mode="edit"
         editAgentId={screen.agentId}
@@ -249,7 +254,7 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
 
   if (screen.type === "timeouts") {
     return (
-      <AgentTimeoutsApp
+      <AgentTimeoutsScreen
         agentId={screen.agentId}
         onBack={() => {
           setScreen({
@@ -267,7 +272,7 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
       <Box flexDirection="column">
         <HoomanBanner subtitle="configure · update" />
         <Text bold>Update agent</Text>
-        <Text dimColor>Agent {screen.agentId}</Text>
+        <Text color={theme.dim}>Agent {screen.agentId}</Text>
         <SelectInput
           items={[
             {
@@ -308,7 +313,7 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
 
   if (screen.type === "run") {
     return (
-      <RunAgentApp
+      <RunScreen
         container={container}
         initialAgentId={screen.agentId}
         onExit={goHome}
@@ -326,7 +331,7 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
 
   if (screen.type === "skills") {
     return (
-      <SkillsApp
+      <SkillsScreen
         container={container}
         agentId={screen.agentId}
         onBack={() => {
@@ -342,7 +347,7 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
 
   if (screen.type === "mcp") {
     return (
-      <McpServersApp
+      <McpServersScreen
         container={container}
         agentId={screen.agentId}
         onBack={() => {
@@ -362,13 +367,14 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
         <HoomanBanner subtitle="configure" />
         <Text bold>Delete agent?</Text>
         <Text>
-          This will remove <Text color="cyan">{screen.agentId}</Text> from the
+          This will remove{" "}
+          <Text color={theme.accentPrimary}>{screen.agentId}</Text> from the
           registry and delete its files (config, MCP, skills). This cannot be
           undone.
         </Text>
         {actionError ? (
           <Box marginTop={1}>
-            <Text color="red">{actionError}</Text>
+            <Text color={theme.error}>{actionError}</Text>
           </Box>
         ) : null}
         <Box marginTop={1}>
@@ -429,10 +435,13 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
       <Box flexDirection="column">
         <HoomanBanner subtitle="configure · agent" />
         <Text>
-          Agent <Text color="cyan">{screen.agentId}</Text>
-          <Text dimColor> ({screen.enabled ? "enabled" : "disabled"})</Text>
+          Agent <Text color={theme.accentPrimary}>{screen.agentId}</Text>
+          <Text color={theme.dim}>
+            {" "}
+            ({screen.enabled ? "enabled" : "disabled"})
+          </Text>
         </Text>
-        <Text dimColor>Choose an action</Text>
+        <Text color={theme.dim}>Choose an action</Text>
         <SelectInput
           items={menuItems}
           itemComponent={
@@ -492,7 +501,7 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
     return (
       <Box flexDirection="column">
         <HoomanBanner subtitle="configure" />
-        <Text color="cyan">Loading…</Text>
+        <Text color={theme.accentPrimary}>Loading…</Text>
       </Box>
     );
   }
@@ -501,7 +510,7 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
     return (
       <Box flexDirection="column">
         <HoomanBanner subtitle="configure" />
-        <Text color="red">{loadError}</Text>
+        <Text color={theme.error}>{loadError}</Text>
         <KeyHints mode="quit_only" />
       </Box>
     );
@@ -521,10 +530,10 @@ export function ConfigureApp({ container }: ConfigureAppProps) {
   return (
     <Box flexDirection="column">
       <HoomanBanner subtitle="configure" />
-      <Text bold color="magenta">
+      <Text bold color={theme.text}>
         Agents
       </Text>
-      <Text dimColor>
+      <Text color={theme.dim}>
         Select an agent or create · Esc — leave · Ctrl+C — quit
       </Text>
       <SelectInput
