@@ -14,7 +14,7 @@ function ChoiceItem({
 }) {
   if (value === "deny") {
     return (
-      <Text color={isSelected ? theme.error : theme.dim} bold={isSelected}>
+      <Text color={theme.error} bold={isSelected}>
         {label}
       </Text>
     );
