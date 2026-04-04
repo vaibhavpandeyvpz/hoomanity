@@ -1,6 +1,6 @@
 {
   "name": "hoomanity",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Interactive CLI for multi-agent setups. Run `hoomanity` to pick an agent; `hoomanity configure` for create/edit, skills, MCP, and settings.",
   "license": "MIT",
   "repository": {
