@@ -1,6 +1,21 @@
+<div align="center">
+
 # hoomanity
 
-Interactive terminal UI for running and configuring local AI agents (OpenAI Agents SDK, Recollect-backed session memory, MCP, and skills).
+**Interactive terminal UI for running and configuring local AI agents (OpenAI Agents SDK, Recollect-backed session memory, MCP, and skills).**
+
+[![npm version](https://img.shields.io/npm/v/hoomanity.svg?style=flat-square)](https://www.npmjs.com/package/hoomanity)
+[![Node.js Version](https://img.shields.io/node/v/hoomanity.svg?style=flat-square)](https://nodejs.org/)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/vaibhavpandeyvpz/hoomanity/build-publish.yml?branch=main&style=flat-square)](https://github.com/vaibhavpandeyvpz/hoomanity/actions)
+[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg?style=flat-square)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
+<br/>
+<img src=".github/screenshot.png" alt="hoomanity interface" width="800" />
+<br/>
+<br/>
+
+</div>
 
 **Requirements:** [Node.js](https://nodejs.org/) 24+
 

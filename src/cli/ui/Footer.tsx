@@ -20,7 +20,7 @@ function truncateString(s: string, maxLen: number): string {
 function StatusBarSection({ children }: { children: React.ReactNode }) {
   return (
     <Box paddingX={1}>
-      <Text color={theme.text}>{children}</Text>
+      <Text color={theme.headerText}>{children}</Text>
     </Box>
   );
 }
