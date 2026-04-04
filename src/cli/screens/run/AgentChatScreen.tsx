@@ -8,6 +8,7 @@ import { HoomanBanner } from "../../ui/HoomanBanner.js";
 import { ChatMessage } from "../../ui/ChatMessage.js";
 import { ChatInput } from "../../ui/ChatInput.js";
 import { Footer } from "../../ui/Footer.js";
+import { KeyHints } from "../../ui/KeyHints.js";
 import { McpApprovalBlock } from "../../ui/McpApprovalBlock.js";
 import { theme } from "../../ui/theme.js";
 
@@ -58,10 +59,14 @@ export function AgentChatScreen({
       }
 
       if (key.escape) {
-        void session.actions.leaveSession().then(() => {
-          if (onBack) onBack();
-          else onExit();
-        });
+        if (session.state.isRunning) {
+          session.actions.cancelPrompt();
+        } else {
+          void session.actions.leaveSession().then(() => {
+            if (onBack) onBack();
+            else onExit();
+          });
+        }
       }
     },
     { isActive: !mcpApprovalInfo },
@@ -81,13 +86,6 @@ export function AgentChatScreen({
         )}
 
         <Box flexDirection="column" marginTop={1}>
-          {session.state.messages.length === 0 && (
-            <Text color={theme.dim}>
-              Message the agent — Enter to send. Esc
-              {onBack ? " — back to menu" : " — leave"} · Ctrl+C — quit
-            </Text>
-          )}
-
           {session.state.messages.map((m, i) => {
             const isPending =
               m.role === "assistant" &&
@@ -128,6 +126,15 @@ export function AgentChatScreen({
         )}
 
         <Footer mcpCount={mcpStats?.mcp} skillsCount={mcpStats?.skills} />
+        <KeyHints mode="custom">
+          Enter — send · Esc{" "}
+          {session.state.isRunning
+            ? "— cancel prompt"
+            : onBack
+              ? "— menu"
+              : "— leave"}{" "}
+          · Ctrl+C — quit
+        </KeyHints>
       </Box>
     </SessionProvider>
   );

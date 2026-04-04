@@ -163,7 +163,7 @@ export async function createForAgent(
   if (created.length === 0) {
     return {
       servers: [],
-      close: async () => { },
+      close: async () => {},
     };
   }
   const servers = await connectMcpServers(created, {

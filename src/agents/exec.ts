@@ -239,13 +239,9 @@ export async function runAgentSessionTurnStreaming(
     readonly onTurnComplete?: (usage: TurnUsageSnapshot) => void;
     readonly onToolCallStart?: (info: ToolCallStartInfo) => void;
     readonly onToolCallEnd?: (info: ToolCallEndInfo) => void;
-    /** Live reasoning/thinking text while the model streams (e.g. OpenAI reasoning deltas). */
     readonly onReasoningUpdate?: (reasoningSoFar: string) => void;
-    /**
-     * Estimated output tok/s while assistant text streams (~chars/4 over wall time since first delta).
-     * Cleared to `null` when the turn finishes.
-     */
     readonly onStreamingOutputTpsEst?: (tokensPerSec: number | null) => void;
+    readonly abortSignal?: AbortSignal;
   },
 ): Promise<string> {
   const input = prompt.trim();
@@ -254,11 +250,17 @@ export async function runAgentSessionTurnStreaming(
   const timeouts = resolvedAgentTimeouts(cfg);
   const maxTurns = resolvedMaxTurns(cfg);
   const streamReasoning = resolvedReasoningEnabled(cfg);
+
+  const timeoutSignal = AbortSignal.timeout(timeouts.turnTimeoutMs);
+  const signal = options?.abortSignal
+    ? AbortSignal.any([timeoutSignal, options.abortSignal])
+    : timeoutSignal;
+
   const streamed = await run(agent, input, {
     session: open.session,
     stream: true,
     maxTurns,
-    signal: AbortSignal.timeout(timeouts.turnTimeoutMs),
+    signal,
   });
 
   let accumulated = "";

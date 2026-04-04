@@ -69,14 +69,15 @@ export function Footer({
         <Box>
           {isRunning ? (
             <StatusBarSection>
-              <Spinner type="binary" color={theme.accentSecondary} />{" "}
+              <Spinner type="binary" color={theme.accentSecondary} />
+              {` · `}
               {runningElapsedSec}s
               {streamingTpsEst != null
                 ? ` · ~${streamingTpsEst.toFixed(1)} tk/s`
                 : ""}
             </StatusBarSection>
           ) : (
-            <StatusBarSection> · ready</StatusBarSection>
+            <StatusBarSection>ready</StatusBarSection>
           )}
         </Box>
       </Box>

@@ -45,6 +45,7 @@ export type AgentSessionActions = {
   submitPrompt: (text: string) => void;
   leaveSession: () => Promise<void>;
   clearError: () => void;
+  cancelPrompt: () => void;
 };
 
 function updateLastAssistant(
@@ -136,6 +137,7 @@ export function useAgentSession(
 
   const sessionRef = useRef<OpenAgentSession | null>(null);
   const compactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!agentId) return;
@@ -222,6 +224,10 @@ export function useAgentSession(
   );
 
   const leaveSession = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     if (sessionRef.current) {
       await sessionRef.current.closeMcp();
       sessionRef.current = null;
@@ -234,6 +240,13 @@ export function useAgentSession(
     setIsRunning(false);
     setLiveReasoning("");
     setStreamingTpsEst(null);
+  }, []);
+
+  const cancelPrompt = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
   }, []);
 
   const submitPrompt = useCallback(
@@ -259,19 +272,41 @@ export function useAgentSession(
             });
             attachRecollectCompactionUi(sessionRef.current);
           }
+          const abortCtrl = new AbortController();
+          abortControllerRef.current = abortCtrl;
+
           await runAgentSessionTurnStreaming(
             sessionRef.current,
             t,
             (partialText) => {
               setMessages((m) => updateLastAssistant(m, partialText));
             },
-            { ...streamingCallbacks, ...streamUiCallbacks },
+            {
+              ...streamingCallbacks,
+              ...streamUiCallbacks,
+              abortSignal: abortCtrl.signal,
+            },
           );
-        } catch (e) {
-          setMessages((m) => stripFailedAssistantTail(m));
-          setError(formatCaughtException(e));
+        } catch (e: any) {
+          if (e?.name === "AbortError" || e?.message?.includes("Abort")) {
+            setMessages((m) => {
+              const next = [...m];
+              for (let i = next.length - 1; i >= 0; i--) {
+                const msg = next[i];
+                if (msg.role === "assistant") {
+                  next[i] = { ...msg, text: msg.text + " [Canceled]" };
+                  break;
+                }
+              }
+              return next;
+            });
+          } else {
+            setMessages((m) => stripFailedAssistantTail(m));
+            setError(formatCaughtException(e));
+          }
         } finally {
           setIsRunning(false);
+          abortControllerRef.current = null;
         }
       })();
     },
@@ -310,6 +345,7 @@ export function useAgentSession(
       submitPrompt,
       leaveSession,
       clearError: () => setError(null),
+      cancelPrompt,
     },
   };
 }

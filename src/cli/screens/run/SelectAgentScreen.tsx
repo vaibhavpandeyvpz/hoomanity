@@ -102,11 +102,12 @@ export function SelectAgentScreen({ onSelect, onExit }: Props) {
       <Text bold color={theme.text}>
         Pick an agent
       </Text>
-      <Text color={theme.dim}>↑↓ · Enter — start chat</Text>
       <Box marginTop={1}>
         <SelectInput items={items} onSelect={(item) => onSelect(item.value)} />
       </Box>
-      <KeyHints mode="quit_only" />
+      <KeyHints mode="custom">
+        ↑↓ · Enter — start chat · Esc — leave · Ctrl+C — quit
+      </KeyHints>
     </Box>
   );
 }
