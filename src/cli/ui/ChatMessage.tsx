@@ -7,7 +7,9 @@ import { Spinner } from "./Spinner.js";
 import { THINKING_VERBS } from "./thinking-verbs.js";
 
 function ThinkingStatus() {
-  const [i, setI] = useState(0);
+  const [i, setI] = useState(() =>
+    Math.floor(Math.random() * THINKING_VERBS.length),
+  );
 
   useEffect(() => {
     // Cycle the fun verbs every 1.5s
