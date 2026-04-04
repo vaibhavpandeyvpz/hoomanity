@@ -27,6 +27,30 @@ function ThinkingStatus() {
   );
 }
 
+/** Try to render args as `key: value` pairs instead of raw JSON. */
+function formatArgs(raw: string): string[] {
+  if (!raw) return [];
+  try {
+    const obj = JSON.parse(raw);
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
+      return [truncLine(raw, 120)];
+    }
+    const entries = Object.entries(obj);
+    if (entries.length === 0) return [];
+    return entries.map(([k, v]) => {
+      const val = typeof v === "string" ? v : JSON.stringify(v);
+      return truncLine(`${k}: ${val}`, 100);
+    });
+  } catch {
+    return [truncLine(raw, 120)];
+  }
+}
+
+function truncLine(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return `${s.slice(0, max - 1)}…`;
+}
+
 type Props = {
   message: ChatMessageType;
   agentName: string;
@@ -41,6 +65,12 @@ export function ChatMessage({
   liveReasoning = "",
 }: Props) {
   if (message.role === "tool_call") {
+    const argLines = formatArgs(message.argsPreview);
+    const result =
+      message.phase === "done" && message.resultPreview
+        ? truncLine(message.resultPreview, 120)
+        : null;
+
     return (
       <Box flexDirection="column" marginBottom={1}>
         <Box
@@ -55,18 +85,18 @@ export function ChatMessage({
             </Text>
             <Text color={theme.accentSecondary}>{message.toolName}</Text>
           </Box>
-          {message.argsPreview && (
-            <Text color={theme.dim}>{message.argsPreview}</Text>
-          )}
-          {message.phase === "done" && message.resultPreview && (
-            <Text color={theme.dim}>→ {message.resultPreview}</Text>
-          )}
+          {argLines.map((line, i) => (
+            <Text key={i} color={theme.dim}>
+              {line}
+            </Text>
+          ))}
           {message.phase === "running" && (
             <Box flexDirection="row">
               <Spinner type="dots" color={theme.accentPrimary} />
-              <Text color={theme.dim}> running...</Text>
+              <Text color={theme.dim}> running…</Text>
             </Box>
           )}
+          {result && <Text color={theme.success}>→ {result}</Text>}
         </Box>
       </Box>
     );
