@@ -6,6 +6,8 @@ import {
   type MCPServer,
   type MCPServersOptions,
 } from "@openai/agents";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { read as readMcpFile } from "./config.js";
 import type { McpFile, McpToolFilterStatic } from "./types.js";
 
@@ -69,6 +71,40 @@ function stdioServerOptions(s: {
   };
 }
 
+class QuietMCPServerStdio extends MCPServerStdio {
+  override async connect(): Promise<void> {
+    const u: any = (this as any).underlying;
+    const { command, args, env, cwd } = u.params;
+
+    u.transport = new StdioClientTransport({
+      command,
+      args,
+      env,
+      cwd,
+      stderr: "pipe",
+    });
+
+    u.session = new Client({
+      name: u._name,
+      version: "1.0.0",
+    });
+
+    const requestOptions = u.clientSessionTimeoutSeconds
+      ? { timeout: u.clientSessionTimeoutSeconds * 1000 }
+      : undefined;
+
+    try {
+      await u.session.connect(u.transport, requestOptions);
+      u.serverInitializeResult = {
+        serverInfo: { name: u._name, version: "1.0.0" },
+      };
+    } catch (e) {
+      await u.close();
+      throw e;
+    }
+  }
+}
+
 function serversFromMcpFile(mcp: McpFile, rpcTimeoutMs?: number): MCPServer[] {
   const t = mcpSdkTimeoutOptions(rpcTimeoutMs);
   const out: MCPServer[] = [];
@@ -92,7 +128,7 @@ function serversFromMcpFile(mcp: McpFile, rpcTimeoutMs?: number): MCPServer[] {
     }
     if (s.fullCommand) {
       out.push(
-        new MCPServerStdio({
+        new QuietMCPServerStdio({
           name: s.name,
           fullCommand: s.fullCommand,
           ...stdioServerOptions(s),
@@ -101,7 +137,7 @@ function serversFromMcpFile(mcp: McpFile, rpcTimeoutMs?: number): MCPServer[] {
       );
     } else if (s.command) {
       out.push(
-        new MCPServerStdio({
+        new QuietMCPServerStdio({
           name: s.name,
           command: s.command,
           args: s.args ?? [],
@@ -127,7 +163,7 @@ export async function createForAgent(
   if (created.length === 0) {
     return {
       servers: [],
-      close: async () => {},
+      close: async () => { },
     };
   }
   const servers = await connectMcpServers(created, {
