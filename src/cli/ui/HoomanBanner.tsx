@@ -26,7 +26,7 @@ export function HoomanBanner({
     return (
       <Box flexDirection="row" marginBottom={1} width={cols}>
         <Text color={theme.headerText} backgroundColor={theme.headerBg} bold>
-          {` █ ${TITLE} `}
+          {` ${TITLE} `}
         </Text>
         <Text color={theme.headerBg} backgroundColor={theme.accentPrimary}>
           {rightSide}

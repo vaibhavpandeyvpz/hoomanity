@@ -13,16 +13,16 @@ function pctCtxLeft(sessionTokens: number, window: number | null): string {
 
 function truncateString(s: string, maxLen: number): string {
   const t = s.trim();
-  if (t.length <= maxLen) return t;
+  const absMax = Math.abs(maxLen);
+  if (t.length <= absMax) return t;
+  if (maxLen < 0) {
+    return `…${t.slice(t.length - absMax + 1)}`;
+  }
   return `${t.slice(0, maxLen - 1)}…`;
 }
 
 function StatusBarSection({ children }: { children: React.ReactNode }) {
-  return (
-    <Box paddingX={1}>
-      <Text color={theme.headerText}>{children}</Text>
-    </Box>
-  );
+  return <Text color={theme.headerText}>{children}</Text>;
 }
 
 export function Footer({
@@ -41,9 +41,9 @@ export function Footer({
     streamingTpsEst,
   } = useSession();
 
-  const cwdStr = truncateString(process.cwd(), 30);
-  const mcpStr = mcpCount != null ? `MCP: ${mcpCount}` : "";
-  const skillsStr = skillsCount != null ? `Skills: ${skillsCount}` : "";
+  const cwdStr = truncateString(process.cwd(), -30);
+  const mcpStr = mcpCount != null ? `mcp: ${mcpCount}` : "";
+  const skillsStr = skillsCount != null ? `skills: ${skillsCount}` : "";
 
   const ctxWinStr = meta?.maxContextTokens
     ? pctCtxLeft(sessionTokensSum, meta.maxContextTokens)
@@ -61,7 +61,8 @@ export function Footer({
           <StatusBarSection>{agentId}</StatusBarSection>
           {meta?.model && (
             <StatusBarSection>
-              · {truncateString(meta.model, 20)}
+              {` · `}
+              {truncateString(meta.model, 20)}
             </StatusBarSection>
           )}
         </Box>
@@ -75,19 +76,19 @@ export function Footer({
                 : ""}
             </StatusBarSection>
           ) : (
-            <StatusBarSection>ready</StatusBarSection>
+            <StatusBarSection> · ready</StatusBarSection>
           )}
         </Box>
       </Box>
       <Box flexDirection="row" justifyContent="space-between" marginTop={0}>
         <Box>
-          <Text color={theme.dim}> cwd: {cwdStr} </Text>
-          {mcpStr && <Text color={theme.dim}> · {mcpStr} </Text>}
-          {skillsStr && <Text color={theme.dim}> · {skillsStr} </Text>}
+          <Text color={theme.dim}> cwd: {cwdStr}</Text>
+          {mcpStr && <Text color={theme.dim}> · {mcpStr}</Text>}
+          {skillsStr && <Text color={theme.dim}> · {skillsStr}</Text>}
         </Box>
         <Box>
           <Text color={theme.dim}>
-            ctx used: {ctxWinStr} ({sessionTokensSum}t)
+            ctx used: {ctxWinStr} ({sessionTokensSum}t){" "}
           </Text>
         </Box>
       </Box>
