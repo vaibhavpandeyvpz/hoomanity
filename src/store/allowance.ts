@@ -1,9 +1,12 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { Agent } from "@openai/agents";
-import { RunToolApprovalItem, type RunContext } from "@openai/agents";
+import {
+  RunToolApprovalItem,
+  type Agent,
+  type RunContext,
+} from "@openai/agents";
 import { z } from "zod";
-import { agentToolsPath } from "../utils/path-helpers.js";
+import { agentToolsPath } from "./paths.js";
 
 const ToolsAllowanceFileSchema = z
   .object({

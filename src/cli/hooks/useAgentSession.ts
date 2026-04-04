@@ -7,12 +7,12 @@ import {
   type ToolCallEndInfo,
   type ToolCallStartInfo,
   type TurnUsageSnapshot,
-} from "../../agents/exec.js";
-import { read as readConfig } from "../../agents/config.js";
-import { resolvedMaxContextTokens } from "../../agents/timeouts.js";
-import { formatRecollectCompactionLine } from "../../agents/recollect/compaction-notice.js";
-import { formatCaughtException } from "../../agents/synthetic-tool-result.js";
-import type { McpApprovalPrompt } from "../../agents/allowance.js";
+} from "../../engine/runner.js";
+import { read as readConfig } from "../../store/agent-config.js";
+import { resolvedMaxContextTokens } from "../../engine/timeouts.js";
+import { formatRecollectCompactionLine } from "../../engine/memory/compaction-notice.js";
+import { formatCaughtException } from "../../engine/synthetic-tool-result.js";
+import type { McpApprovalPrompt } from "../../store/allowance.js";
 import type { SessionAgentMeta } from "../context/SessionContext.js";
 
 export type ChatMessage =

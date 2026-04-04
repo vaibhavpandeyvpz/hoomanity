@@ -1,10 +1,10 @@
-import type { AgentContainer } from "../agents/utils/container.js";
+import type { AgentContainer } from "../engine/container.js";
 import {
   create as createAgent,
   type CreateAgentOptions,
-} from "../agents/index.js";
+} from "../engine/index.js";
 import { createForAgent } from "../mcp/manager.js";
-import { McpRegistry } from "../mcp/registry.js";
+import { McpRegistry } from "../store/mcp-registry.js";
 import { SkillsRegistry } from "../skills/registry.js";
 import { LlmProviderRegistry } from "../providers/registry.js";
 

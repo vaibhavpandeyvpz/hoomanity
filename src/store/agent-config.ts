@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { AgentNotFoundError } from "./errors.js";
 import { AgentConfigSchema, type AgentConfig } from "./types.js";
-import { agentConfigPath } from "../utils/path-helpers.js";
+import { agentConfigPath } from "./paths.js";
 
 export async function read(agentId: string): Promise<AgentConfig> {
   const p = agentConfigPath(agentId);

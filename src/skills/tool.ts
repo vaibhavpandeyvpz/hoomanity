@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tool, type Tool } from "@openai/agents";
 import { z } from "zod";
-import { syntheticToolFailureOutput } from "../agents/synthetic-tool-result.js";
-import { agentSkillsDir } from "../utils/path-helpers.js";
+import { syntheticToolFailureOutput } from "../engine/synthetic-tool-result.js";
+import { agentSkillsDir } from "../store/paths.js";
 
 const readSkillFileParameters = z.object({
   skill_folder: z

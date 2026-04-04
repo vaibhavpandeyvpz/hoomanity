@@ -8,8 +8,8 @@ import {
   type Tool,
 } from "@openai/agents";
 import slugify from "slugify";
-import type { ApprovalsManager } from "./allowance.js";
-import { syntheticToolFailureOutput } from "./synthetic-tool-result.js";
+import type { ApprovalsManager } from "../store/allowance.js";
+import { syntheticToolFailureOutput } from "../engine/synthetic-tool-result.js";
 
 type McpToolCallDetails = Parameters<FunctionTool["invoke"]>[2];
 

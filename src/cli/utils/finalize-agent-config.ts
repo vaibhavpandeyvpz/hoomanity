@@ -2,7 +2,7 @@ import type {
   AgentConfig,
   AgentConfigBase,
   ProviderConfigDrafts,
-} from "../../agents/types.js";
+} from "../../store/types.js";
 import type { LlmProviderRegistry } from "../../providers/registry.js";
 
 function draftForProvider(

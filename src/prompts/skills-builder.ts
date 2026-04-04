@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { FrontMatterOptions, FrontMatterResult } from "front-matter";
-import { agentSkillsDir } from "../utils/path-helpers.js";
+import { agentSkillsDir } from "../store/paths.js";
 
 const require = createRequire(import.meta.url);
 const parseFrontMatter = require("front-matter") as <T>(

@@ -1,4 +1,4 @@
-import type { AgentConfig } from "./types.js";
+import type { AgentConfig } from "../store/types.js";
 
 /** Milliseconds — used at runtime and stored in `AgentConfig.timeouts`. */
 export const DEFAULT_AGENT_TIMEOUTS = {

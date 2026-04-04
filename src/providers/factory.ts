@@ -1,5 +1,5 @@
 import type { Model } from "@openai/agents";
-import type { AgentConfig } from "../agents/types.js";
+import type { AgentConfig } from "../store/types.js";
 import type { ModelProvider } from "./types.js";
 import type { ILlmProvider } from "./types.js";
 

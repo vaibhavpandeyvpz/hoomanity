@@ -1,13 +1,16 @@
 import { protocol, run, type RunItem } from "@openai/agents";
 import type { HoomanContainer } from "../cli/container.js";
-import type { AgentContainer } from "./utils/container.js";
-import { ApprovalsManager, type McpApprovalPrompt } from "./allowance.js";
-import { read as readConfig } from "./config.js";
+import type { AgentContainer } from "./container.js";
+import {
+  ApprovalsManager,
+  type McpApprovalPrompt,
+} from "../store/allowance.js";
+import { read as readConfig } from "../store/agent-config.js";
 import {
   createRecollectSession,
   type RecollectSession,
-} from "./recollect/recollect-session.js";
-import { resolvedReasoningEnabled } from "./model-settings.js";
+} from "./memory/recollect-session.js";
+import { resolvedReasoningEnabled } from "./settings.js";
 import { resolvedAgentTimeouts, resolvedMaxTurns } from "./timeouts.js";
 
 const TOOL_ARGS_PREVIEW_MAX = 220;

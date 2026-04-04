@@ -1,4 +1,4 @@
-import { loadPromptTemplate } from "../prompts/load-prompt.js";
+import { loadPromptTemplate } from "./load-prompt.js";
 
 /**
  * General agent behavior. Template: {@link ../prompts/operating-guidelines.md}.

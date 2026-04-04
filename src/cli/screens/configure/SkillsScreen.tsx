@@ -202,7 +202,7 @@ export function SkillsScreen({
     return (
       <Box flexDirection="column">
         <Text color="red">{error}</Text>
-        <Text dimColor>Esc — back to agent · Ctrl+C — quit</Text>
+        <Text dimColor>esc — back to agent · ctrl+c — quit</Text>
       </Box>
     );
   }
@@ -254,7 +254,7 @@ export function SkillsScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Enter — install · Esc — cancel</Text>
+          <Text dimColor>enter — install · esc — cancel</Text>
         </Box>
       </Box>
     );
@@ -391,8 +391,8 @@ export function SkillsScreen({
         <Box marginTop={1}>
           <Text dimColor>
             {findUi === "input"
-              ? "Enter — search · Esc — back"
-              : "↑↓ — choose · Enter — install · Esc — edit search"}
+              ? "enter — search · esc — back"
+              : "↑↓ — choose · enter — install · esc — edit search"}
           </Text>
         </Box>
       </Box>
@@ -447,7 +447,7 @@ export function SkillsScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — back without deleting</Text>
+          <Text dimColor>esc — back without deleting</Text>
         </Box>
       </Box>
     );
@@ -486,7 +486,7 @@ export function SkillsScreen({
           }}
         />
         <Box marginTop={1}>
-          <Text dimColor>Esc — back to skills list</Text>
+          <Text dimColor>esc — back to skills list</Text>
         </Box>
       </Box>
     );
@@ -537,7 +537,7 @@ export function SkillsScreen({
         />
       </Box>
       <Box marginTop={1}>
-        <Text dimColor>Esc — back to agent · Ctrl+C — quit</Text>
+        <Text dimColor>esc — back to agent · ctrl+c — quit</Text>
       </Box>
     </Box>
   );

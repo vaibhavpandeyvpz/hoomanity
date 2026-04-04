@@ -20,26 +20,26 @@ export function KeyHints({ mode = "back_quit", children }: KeyHintsProps) {
   if (mode === "custom" && children) {
     return (
       <Box marginTop={1}>
-        <Text dimColor>{children}</Text>
+        <Text dimColor> {children} </Text>
       </Box>
     );
   }
   let line: string;
   switch (mode) {
     case "quit_only":
-      line = "Esc — leave · Ctrl+C — quit";
+      line = "esc — leave · ctrl+c — quit";
       break;
     case "configure_root":
-      line = "Esc — leave · Ctrl+C — quit";
+      line = "esc — leave · ctrl+c — quit";
       break;
     case "back_quit":
     default:
-      line = "Esc — back · Ctrl+C — quit";
+      line = "esc — back · ctrl+c — quit";
       break;
   }
   return (
     <Box marginTop={1}>
-      <Text dimColor>{line}</Text>
+      <Text dimColor> {line} </Text>
     </Box>
   );
 }

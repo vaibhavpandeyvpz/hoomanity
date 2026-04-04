@@ -7,9 +7,9 @@ import {
 import { Agent, Runner, extractAllTextOutput } from "@openai/agents";
 import { create as createLlmModel } from "../../providers/factory.js";
 import type { LlmProviderRegistry } from "../../providers/registry.js";
-import { agentRecollectSessionsRoot } from "../../utils/path-helpers.js";
-import type { AgentConfig } from "../types.js";
-import { agentModelSettings } from "../model-settings.js";
+import { agentRecollectSessionsRoot } from "../../store/paths.js";
+import type { AgentConfig } from "../../store/types.js";
+import { agentModelSettings } from "../settings.js";
 import { resolvedMaxContextTokens } from "../timeouts.js";
 import type { CompactionNotifierRef } from "./compaction-notice.js";
 import { RECOLLECT_DEFAULT_THRESHOLD } from "./constants.js";

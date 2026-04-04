@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { AGENT_INSTRUCTIONS_BASENAME } from "./files.js";
-import { agentInstructionsPath } from "../utils/path-helpers.js";
+import { agentInstructionsPath } from "./paths.js";
 
 export { AGENT_INSTRUCTIONS_BASENAME };
 

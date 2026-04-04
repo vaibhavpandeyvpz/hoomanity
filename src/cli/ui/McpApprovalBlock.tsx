@@ -1,7 +1,7 @@
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import { theme } from "./theme.js";
-import type { McpApprovalChoice } from "../../agents/allowance.js";
+import type { McpApprovalChoice } from "../../store/allowance.js";
 
 export function McpApprovalBlock({
   toolName,
@@ -57,7 +57,7 @@ export function McpApprovalBlock({
           }}
         />
       </Box>
-      <Text color={theme.dim}>↑↓ Enter — choose · Esc — deny</Text>
+      <Text color={theme.dim}>↑↓ · enter — choose · esc — deny</Text>
     </Box>
   );
 }

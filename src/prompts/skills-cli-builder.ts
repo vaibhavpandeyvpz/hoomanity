@@ -1,7 +1,10 @@
 import { resolve } from "node:path";
-import { loadPromptTemplate } from "../prompts/load-prompt.js";
-import { agentDir } from "../utils/path-helpers.js";
-import { SKILLS_CLI_AGENT_TARGET, SKILLS_CLI_PACKAGE } from "./registry.js";
+import { loadPromptTemplate } from "./load-prompt.js";
+import { agentDir } from "../store/paths.js";
+import {
+  SKILLS_CLI_AGENT_TARGET,
+  SKILLS_CLI_PACKAGE,
+} from "../skills/registry.js";
 
 /**
  * How to run the Vercel `skills` CLI for this agent.

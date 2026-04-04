@@ -4,8 +4,8 @@ import {
   AGENT_CONFIG_BASENAME,
   AGENT_INSTRUCTIONS_BASENAME,
   AGENT_MCP_BASENAME,
-} from "./files.js";
-import { agentDir, agentSkillsDir } from "../utils/path-helpers.js";
+} from "../store/files.js";
+import { agentDir, agentSkillsDir } from "../store/paths.js";
 
 const DEBOUNCE_MS = 150;
 

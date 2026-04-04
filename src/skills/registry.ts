@@ -6,7 +6,7 @@ import {
   searchSkillsAPI,
   type SearchSkill,
 } from "./utils/search-skills-api.js";
-import { agentDir, agentSkillsDir } from "../utils/path-helpers.js";
+import { agentDir, agentSkillsDir } from "../store/paths.js";
 
 const execFileAsync = promisify(execFile);
 

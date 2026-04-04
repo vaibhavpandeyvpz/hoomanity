@@ -5,8 +5,8 @@ import TextInput from "ink-text-input";
 import {
   read as readConfig,
   write as writeConfig,
-} from "../../../agents/config.js";
-import type { AgentConfig, AgentTimeouts } from "../../../agents/types.js";
+} from "../../../store/agent-config.js";
+import type { AgentConfig, AgentTimeouts } from "../../../store/types.js";
 import {
   DEFAULT_AGENT_TIMEOUTS,
   DEFAULT_MAX_CONTEXT_TOKENS,
@@ -14,7 +14,7 @@ import {
   resolvedAgentTimeouts,
   resolvedMaxContextTokens,
   resolvedMaxTurns,
-} from "../../../agents/timeouts.js";
+} from "../../../engine/timeouts.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
 
 export type AgentTimeoutsScreenProps = {
@@ -243,7 +243,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
       <Box flexDirection="column">
         <Text bold>Run limits</Text>
         <Text color="cyan">Loading…</Text>
-        <Text dimColor>Esc — back · Ctrl+C — quit</Text>
+        <Text dimColor>esc — back · ctrl+c — quit</Text>
       </Box>
     );
   }
@@ -253,7 +253,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
       <Box flexDirection="column">
         <Text bold>Run limits</Text>
         <Text color="red">{error ?? "Error"}</Text>
-        <Text dimColor>Esc — back · Ctrl+C — quit</Text>
+        <Text dimColor>esc — back · ctrl+c — quit</Text>
       </Box>
     );
   }
@@ -263,7 +263,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
       <Box flexDirection="column">
         <Text bold>Run limits</Text>
         <Text color="red">No config loaded.</Text>
-        <Text dimColor>Esc — back · Ctrl+C — quit</Text>
+        <Text dimColor>esc — back · ctrl+c — quit</Text>
       </Box>
     );
   }
@@ -281,7 +281,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
           {curMin} min (default {DEFAULT_AGENT_TIMEOUTS.turnTimeoutMs / 60_000}{" "}
           min).
         </Text>
-        <Text dimColor>Enter minutes (1–{MAX_WALL_MIN}). Esc — menu</Text>
+        <Text dimColor>enter minutes (1–{MAX_WALL_MIN}). esc — menu</Text>
         <TextInput
           value={draft}
           placeholder={`e.g. ${curMin}`}
@@ -314,7 +314,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
           Per MCP tool invocation. Current: {curMin} min (default{" "}
           {DEFAULT_AGENT_TIMEOUTS.toolCallTimeoutMs / 60_000} min).
         </Text>
-        <Text dimColor>Enter minutes (1–{MAX_TOOL_MIN}). Esc — menu</Text>
+        <Text dimColor>enter minutes (1–{MAX_TOOL_MIN}). esc — menu</Text>
         <TextInput
           value={draft}
           placeholder={`e.g. ${curMin}`}
@@ -349,7 +349,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
           {DEFAULT_AGENT_TIMEOUTS.mcpConnectTimeoutMs / 1000}s). The SDK
           otherwise defaults to ~5s per request.
         </Text>
-        <Text dimColor>Enter seconds (1–{MAX_MCP_SEC}). Esc — menu</Text>
+        <Text dimColor>enter seconds (1–{MAX_MCP_SEC}). esc — menu</Text>
         <TextInput
           value={draft}
           placeholder={`e.g. ${curSec}`}
@@ -381,7 +381,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
           Maximum model/tool loop steps per user message (SDK maxTurns).
           Current: {maxTurns} (default {DEFAULT_MAX_TURNS}).
         </Text>
-        <Text dimColor>Enter integer (1–{MAX_TURNS_CAP}). Esc — menu</Text>
+        <Text dimColor>enter integer (1–{MAX_TURNS_CAP}). esc — menu</Text>
         <TextInput
           value={draft}
           placeholder={`e.g. ${maxTurns}`}
@@ -416,7 +416,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
         <Text dimColor>
           Enter tokens (e.g. 50000, 50K, 1M). Range{" "}
           {MIN_CONTEXT_TOK.toLocaleString()}–{MAX_CONTEXT_TOK.toLocaleString()}.
-          Esc — menu
+          esc — menu
         </Text>
         <TextInput
           value={draft}
@@ -484,7 +484,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — cancel · choose No / Yes</Text>
+          <Text dimColor>esc — cancel · choose No / Yes</Text>
         </Box>
       </Box>
     );
@@ -548,7 +548,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — menu · Ctrl+C — quit</Text>
+          <Text dimColor>esc — menu · ctrl+c — quit</Text>
         </Box>
       </Box>
     );
@@ -623,7 +623,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
         }}
       />
       <Box marginTop={1}>
-        <Text dimColor>Esc — back · Ctrl+C — quit</Text>
+        <Text dimColor>esc — back · ctrl+c — quit</Text>
       </Box>
     </Box>
   );

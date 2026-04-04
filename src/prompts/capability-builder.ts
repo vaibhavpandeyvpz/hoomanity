@@ -1,5 +1,5 @@
-import { loadPromptTemplate } from "../prompts/load-prompt.js";
-import { SKILLS_CLI_PACKAGE } from "./registry.js";
+import { loadPromptTemplate } from "./load-prompt.js";
+import { SKILLS_CLI_PACKAGE } from "../skills/registry.js";
 
 /**
  * Tools/skills fulfillment and missing-capability flow.

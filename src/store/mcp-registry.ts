@@ -5,7 +5,7 @@ import {
   type McpServerEntry,
   type McpUrlTransport,
 } from "./types.js";
-import { read as readMcpFile, write as writeMcpFile } from "./config.js";
+import { read as readMcpFile, write as writeMcpFile } from "./mcp-config.js";
 
 export type McpListEntry = {
   index: number;

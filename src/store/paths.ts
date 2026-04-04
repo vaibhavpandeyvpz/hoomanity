@@ -5,7 +5,7 @@ import {
   AGENT_INSTRUCTIONS_BASENAME,
   AGENT_MCP_BASENAME,
   AGENT_TOOLS_BASENAME,
-} from "../agents/files.js";
+} from "./files.js";
 
 function resolveHoomanRoot(): string {
   return join(homedir(), ".hoomanity");

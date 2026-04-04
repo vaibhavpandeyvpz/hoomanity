@@ -8,8 +8,8 @@ import {
 } from "@openai/agents";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { read as readMcpFile } from "./config.js";
-import type { McpFile, McpToolFilterStatic } from "./types.js";
+import { read as readMcpFile } from "../store/mcp-config.js";
+import type { McpFile, McpToolFilterStatic } from "../store/types.js";
 
 export type McpAgentConnection = {
   servers: MCPServer[];

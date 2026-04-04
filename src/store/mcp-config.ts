@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { McpFileSchema, type McpFile } from "./types.js";
-import { agentMcpPath } from "../utils/path-helpers.js";
+import { agentMcpPath } from "./paths.js";
 
 const DEFAULT: McpFile = { servers: [] };
 

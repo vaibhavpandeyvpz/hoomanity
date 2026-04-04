@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { McpFileSchema, type McpFile } from "../mcp/types.js";
-import { agentDir } from "../utils/path-helpers.js";
+import { McpFileSchema, type McpFile } from "../store/types.js";
+import { agentDir } from "../store/paths.js";
 
 /**
  * Initial `mcp.json` for newly provisioned agents: common stdio MCPs (npx / uvx).

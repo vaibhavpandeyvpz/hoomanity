@@ -2,7 +2,7 @@ import type { AgentInputItem } from "@openai/agents";
 import type { Session } from "@openai/agents";
 import type { MemoryLayer } from "@one710/recollect";
 import type { LlmProviderRegistry } from "../../providers/registry.js";
-import type { AgentConfig } from "../types.js";
+import type { AgentConfig } from "../../store/types.js";
 import type {
   CompactionNotifierRef,
   RecollectCompactionUiPayload,

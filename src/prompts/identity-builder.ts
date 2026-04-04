@@ -1,4 +1,4 @@
-import { loadPromptTemplate } from "../prompts/load-prompt.js";
+import { loadPromptTemplate } from "./load-prompt.js";
 
 /**
  * System-instruction appendix: this agent's identity in hoomanity (agent id + display name).

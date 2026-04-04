@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type {
   McpApprovalChoice,
   McpApprovalPrompt,
-} from "../../agents/allowance.js";
+} from "../../store/allowance.js";
 
 export type McpApprovalInfo = {
   toolName: string;

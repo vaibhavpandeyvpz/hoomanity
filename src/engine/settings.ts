@@ -1,5 +1,5 @@
 import type { ModelSettings } from "@openai/agents";
-import type { AgentConfig } from "./types.js";
+import type { AgentConfig } from "../store/types.js";
 
 /** Whether to stream/show reasoning in the UI (default: true when omitted). */
 export function resolvedReasoningEnabled(config: AgentConfig): boolean {

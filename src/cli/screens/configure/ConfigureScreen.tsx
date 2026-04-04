@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type FC } from "react";
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
-import { read as readConfig } from "../../../agents/config.js";
-import { list, remove, toggle } from "../../../agents/registry.js";
+import { read as readConfig } from "../../../store/agent-config.js";
+import { list, remove, toggle } from "../../../store/agent-registry.js";
 import type { HoomanContainer } from "../../container.js";
 import { AgentTimeoutsScreen } from "./AgentTimeoutsScreen.js";
 import { CreateAgentScreen } from "./CreateAgentScreen.js";
@@ -412,7 +412,7 @@ export function ConfigureScreen({ container }: ConfigureScreenProps) {
         </Box>
         <KeyHints
           mode="custom"
-          children="Esc — back without deleting · Ctrl+C — quit"
+          children="esc — back without deleting · ctrl+c — quit"
         />
       </Box>
     );
@@ -534,7 +534,7 @@ export function ConfigureScreen({ container }: ConfigureScreenProps) {
         Agents
       </Text>
       <Text color={theme.dim}>
-        Select an agent or create · Esc — leave · Ctrl+C — quit
+        Select an agent or create · esc — leave · ctrl+c — quit
       </Text>
       <SelectInput
         items={items}

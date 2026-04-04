@@ -12,9 +12,9 @@ import TextInput from "ink-text-input";
 import {
   read as readConfig,
   write as writeConfig,
-} from "../../../agents/config.js";
-import { read, write } from "../../../agents/instructions.js";
-import { provision } from "../../../agents/provision.js";
+} from "../../../store/agent-config.js";
+import { read, write } from "../../../store/instructions.js";
+import { provision } from "../../../store/provision.js";
 import { openEditorWithInitialContent } from "../../utils/open-in-editor.js";
 import type { HoomanContainer } from "../../container.js";
 import type {
@@ -24,8 +24,10 @@ import type {
   OllamaProviderConfig,
   OpenAIProviderConfig,
 } from "../../../providers/types.js";
-import { createProviderWizard } from "../../../providers/index.js";
-import type { ProviderWizardField } from "../../../providers/types.js";
+import {
+  createProviderWizard,
+  type ProviderWizardField,
+} from "../../../providers/index.js";
 import { finalizeAgentConfig } from "../../utils/finalize-agent-config.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
 import { KeyHints } from "../../ui/KeyHints.js";
@@ -456,7 +458,7 @@ export function CreateAgentScreen({
           <Text color="green">{message}</Text>
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — back · Ctrl+C — quit</Text>
+          <Text dimColor>esc — back · ctrl+c — quit</Text>
         </Box>
       </Box>
     );
@@ -478,7 +480,7 @@ export function CreateAgentScreen({
           <Text color="red">{error}</Text>
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — back · Ctrl+C — quit</Text>
+          <Text dimColor>esc — back · ctrl+c — quit</Text>
         </Box>
       </Box>
     );

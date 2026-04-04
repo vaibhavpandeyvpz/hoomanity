@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
-import { read as readConfig } from "../../../agents/config.js";
-import { list as listRegistry } from "../../../agents/registry.js";
+import { read as readConfig } from "../../../store/agent-config.js";
+import { list as listRegistry } from "../../../store/agent-registry.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
 import { KeyHints } from "../../ui/KeyHints.js";
 import { theme } from "../../ui/theme.js";
@@ -106,7 +106,7 @@ export function SelectAgentScreen({ onSelect, onExit }: Props) {
         <SelectInput items={items} onSelect={(item) => onSelect(item.value)} />
       </Box>
       <KeyHints mode="custom">
-        ↑↓ · Enter — start chat · Esc — leave · Ctrl+C — quit
+        ↑↓ · enter — start chat · esc — leave · ctrl+c — quit
       </KeyHints>
     </Box>
   );

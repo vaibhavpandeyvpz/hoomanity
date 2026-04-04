@@ -11,8 +11,8 @@ import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
 import type { HoomanContainer } from "../../container.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
-import type { McpListEntry } from "../../../mcp/registry.js";
-import type { McpServerEntry, McpUrlTransport } from "../../../mcp/types.js";
+import type { McpListEntry } from "../../../store/mcp-registry.js";
+import type { McpServerEntry, McpUrlTransport } from "../../../store/types.js";
 
 export type McpServersScreenProps = {
   readonly container: HoomanContainer;
@@ -287,7 +287,7 @@ export function McpServersScreen({
     return (
       <Box flexDirection="column">
         <Text color="red">{error}</Text>
-        <Text dimColor>Esc — back to agent · Ctrl+C — quit</Text>
+        <Text dimColor>esc — back to agent · ctrl+c — quit</Text>
       </Box>
     );
   }
@@ -323,7 +323,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — back</Text>
+          <Text dimColor>esc — back</Text>
         </Box>
       </Box>
     );
@@ -374,7 +374,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Enter — save · Esc — back</Text>
+          <Text dimColor>enter — save · esc — back</Text>
         </Box>
       </Box>
     );
@@ -409,7 +409,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Enter — choose transport · Esc — back</Text>
+          <Text dimColor>enter — choose transport · esc — back</Text>
         </Box>
       </Box>
     );
@@ -455,7 +455,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — edit URL again</Text>
+          <Text dimColor>esc — edit URL again</Text>
         </Box>
       </Box>
     );
@@ -506,7 +506,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — back</Text>
+          <Text dimColor>esc — back</Text>
         </Box>
       </Box>
     );
@@ -549,7 +549,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Enter — save · Esc — back</Text>
+          <Text dimColor>enter — save · esc — back</Text>
         </Box>
       </Box>
     );
@@ -596,7 +596,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Enter — save · Esc — back</Text>
+          <Text dimColor>enter — save · esc — back</Text>
         </Box>
       </Box>
     );
@@ -630,7 +630,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Enter — transport · Esc — back</Text>
+          <Text dimColor>enter — transport · esc — back</Text>
         </Box>
       </Box>
     );
@@ -676,7 +676,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — edit URL again</Text>
+          <Text dimColor>esc — edit URL again</Text>
         </Box>
       </Box>
     );
@@ -734,7 +734,7 @@ export function McpServersScreen({
           />
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>Esc — back to list</Text>
+          <Text dimColor>esc — back to list</Text>
         </Box>
       </Box>
     );
@@ -778,7 +778,7 @@ export function McpServersScreen({
         />
       </Box>
       <Box marginTop={1}>
-        <Text dimColor>Esc — back to agent · Ctrl+C — quit</Text>
+        <Text dimColor>esc — back to agent · ctrl+c — quit</Text>
       </Box>
     </Box>
   );

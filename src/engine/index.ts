@@ -1,24 +1,24 @@
 import { Agent, type MCPServer, type Tool } from "@openai/agents";
-import type { ApprovalsManager } from "./allowance.js";
+import type { ApprovalsManager } from "../store/allowance.js";
 import type { CreateForAgentOptions } from "../mcp/manager.js";
-import { read as readConfig } from "./config.js";
-import { read as readInstructions } from "./instructions.js";
-import { mcpServersToTimedTools } from "./mcp-tools.js";
-import { agentModelSettings } from "./model-settings.js";
+import { read as readConfig } from "../store/agent-config.js";
+import { read as readInstructions } from "../store/instructions.js";
+import { mcpServersToTimedTools } from "../mcp/adapter.js";
+import { agentModelSettings } from "./settings.js";
 import { resolvedAgentTimeouts } from "./timeouts.js";
 import { create as createLlmModel } from "../providers/factory.js";
 import type { LlmProviderRegistry } from "../providers/registry.js";
-import { createReadSkillFileTool } from "../tools/read-skill-file.js";
-import { buildAgentIdentityInstructionsAppendix } from "./agent-identity-prompt.js";
-import { buildOperatingGuidelinesInstructionsAppendix } from "./operating-guidelines-appendix.js";
-import { buildCapabilityGuidanceInstructionsAppendix } from "../skills/capability-guidance-appendix.js";
-import { buildSkillsCliInstructionsAppendix } from "../skills/cli-instructions-appendix.js";
-import { createSkillsPrompt } from "../skills/prompt.js";
+import { createReadSkillFileTool } from "../skills/tool.js";
+import { buildAgentIdentityInstructionsAppendix } from "../prompts/identity-builder.js";
+import { buildOperatingGuidelinesInstructionsAppendix } from "../prompts/operating-builder.js";
+import { buildCapabilityGuidanceInstructionsAppendix } from "../prompts/capability-builder.js";
+import { buildSkillsCliInstructionsAppendix } from "../prompts/skills-cli-builder.js";
+import { createSkillsPrompt } from "../prompts/skills-builder.js";
 import {
   AgentContainer,
   type CreateToolsFn,
   type CreateAgentFn,
-} from "./utils/container.js";
+} from "./container.js";
 import { watchAgentAssetsForInvalidation } from "./watch-agent-assets.js";
 
 export type CreateAgentDeps = {

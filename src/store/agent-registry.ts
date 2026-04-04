@@ -2,7 +2,7 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { AgentNotFoundError, RegistryCorruptError } from "./errors.js";
 import { AgentRegistryEntrySchema, type AgentRegistryEntry } from "./types.js";
-import { agentDir, agentsJsonlPath } from "../utils/path-helpers.js";
+import { agentDir, agentsJsonlPath } from "./paths.js";
 
 async function rewrite(entries: AgentRegistryEntry[]): Promise<void> {
   const jsonl = agentsJsonlPath();
