@@ -11,6 +11,7 @@ import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
 import type { HoomanContainer } from "../../container.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
+import { formatCliErrorBrief } from "../../error-format.js";
 import type { McpListEntry } from "../../../store/mcp-registry.js";
 import type { McpServerEntry, McpUrlTransport } from "../../../store/types.js";
 
@@ -140,7 +141,7 @@ export function McpServersScreen({
       const list = await container.mcpRegistry.list(agentId);
       setRows(list);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
     } finally {
       setLoading(false);
     }
@@ -151,7 +152,7 @@ export function McpServersScreen({
       const list = await container.mcpRegistry.list(agentId);
       setRows(list);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
     }
   }, [container, agentId]);
 
@@ -367,7 +368,7 @@ export function McpServersScreen({
                   await refresh();
                   setView("list");
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : String(e));
+                  setActionError(formatCliErrorBrief(e));
                 }
               })();
             }}
@@ -448,7 +449,7 @@ export function McpServersScreen({
                   await refresh();
                   setView("list");
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : String(e));
+                  setActionError(formatCliErrorBrief(e));
                 }
               })();
             }}
@@ -499,7 +500,7 @@ export function McpServersScreen({
                   await refresh();
                   setView("list");
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : String(e));
+                  setActionError(formatCliErrorBrief(e));
                 }
               })();
             }}
@@ -542,7 +543,7 @@ export function McpServersScreen({
                   await refresh();
                   setView("server-menu");
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : String(e));
+                  setActionError(formatCliErrorBrief(e));
                 }
               })();
             }}
@@ -589,7 +590,7 @@ export function McpServersScreen({
                   await refresh();
                   setView("server-menu");
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : String(e));
+                  setActionError(formatCliErrorBrief(e));
                 }
               })();
             }}
@@ -669,7 +670,7 @@ export function McpServersScreen({
                   await refresh();
                   setView("server-menu");
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : String(e));
+                  setActionError(formatCliErrorBrief(e));
                 }
               })();
             }}

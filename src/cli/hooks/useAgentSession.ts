@@ -14,6 +14,8 @@ import { formatRecollectCompactionLine } from "../../engine/memory/compaction-no
 import { formatCaughtException } from "../../engine/synthetic-tool-result.js";
 import type { McpApprovalPrompt } from "../../store/allowance.js";
 import type { SessionAgentMeta } from "../context/SessionContext.js";
+import { CliChannel } from "../../channels/cli-channel.js";
+import { createAiSdkTextModel } from "../../providers/factory.js";
 
 export type ChatMessage =
   | { role: "user"; text: string }
@@ -137,8 +139,10 @@ export function useAgentSession(
   const [streamingTpsEst, setStreamingTpsEst] = useState<number | null>(null);
 
   const sessionRef = useRef<OpenAgentSession | null>(null);
+  const channelRef = useRef<CliChannel | null>(null);
   const compactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastSessionIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!agentId) return;
@@ -194,7 +198,6 @@ export function useAgentSession(
 
   const streamUiCallbacks = useMemo(
     () => ({
-      onReasoningUpdate: setLiveReasoning,
       onStreamingOutputTpsEst: setStreamingTpsEst,
     }),
     [],
@@ -233,6 +236,7 @@ export function useAgentSession(
       await sessionRef.current.closeMcp();
       sessionRef.current = null;
     }
+    channelRef.current = null;
     if (compactionTimerRef.current) {
       clearTimeout(compactionTimerRef.current);
       compactionTimerRef.current = null;
@@ -242,6 +246,14 @@ export function useAgentSession(
     setLiveReasoning("");
     setStreamingTpsEst(null);
   }, []);
+
+  useEffect(() => {
+    const prev = lastSessionIdRef.current;
+    lastSessionIdRef.current = sessionId;
+    if (prev !== undefined && prev !== sessionId) {
+      void leaveSession();
+    }
+  }, [sessionId, leaveSession]);
 
   const cancelPrompt = useCallback(() => {
     if (abortControllerRef.current) {
@@ -268,8 +280,38 @@ export function useAgentSession(
 
         try {
           if (!sessionRef.current) {
+            const cfg = await readConfig(agentId);
+            const approvalModel = createAiSdkTextModel(
+              container.llmRegistry,
+              cfg,
+            );
+
+            const cliChannel = new CliChannel(approvalModel, {
+              onTextUpdate: (partialText) => {
+                setMessages((m) => updateLastAssistant(m, partialText));
+              },
+              onReasoningUpdate: setLiveReasoning,
+              onToolCallStart: (info) => {
+                setMessages((m) =>
+                  insertToolBeforeLastAssistant(m, toolCallRowFromStart(info)),
+                );
+              },
+              onToolCallEnd: (info) => {
+                setMessages((m) => applyToolCallEnd(m, info));
+              },
+              askApproval: async (toolName, argsPreview) => {
+                // Map to the legacy mcpApprovalPrompt which expects an object
+                return mcpApprovalPrompt({
+                  toolName,
+                  input: JSON.parse(argsPreview), // argsPreview is a JSON string from runner
+                  callId: undefined, // Channel interface doesn't pass callId currently
+                });
+              },
+            });
+            channelRef.current = cliChannel;
+
             sessionRef.current = await openAgentSession(container, agentId, {
-              mcpApprovalPrompt,
+              channel: cliChannel,
               sessionId,
             });
             attachRecollectCompactionUi(sessionRef.current);
@@ -280,17 +322,27 @@ export function useAgentSession(
           await runAgentSessionTurnStreaming(
             sessionRef.current,
             t,
-            (partialText) => {
-              setMessages((m) => updateLastAssistant(m, partialText));
-            },
+            channelRef.current ?? undefined,
             {
-              ...streamingCallbacks,
               ...streamUiCallbacks,
+              onTurnComplete: (u) => {
+                setLastTurnTokens(u.totalTokens);
+                const rs = sessionRef.current?.session;
+                if (rs) {
+                  rs.recordTurnUsage(u.totalTokens);
+                  setSessionTokensSum(rs.getRecordedApiUsageTotal());
+                } else {
+                  setSessionTokensSum((x) => x + u.totalTokens);
+                }
+              },
               abortSignal: abortCtrl.signal,
             },
           );
-        } catch (e: any) {
-          if (e?.name === "AbortError" || e?.message?.includes("Abort")) {
+        } catch (e: unknown) {
+          const isAbort =
+            (e instanceof Error && e.name === "AbortError") ||
+            (e instanceof Error && e.message.includes("Abort"));
+          if (isAbort) {
             setMessages((m) => {
               const next = [...m];
               for (let i = next.length - 1; i >= 0; i--) {

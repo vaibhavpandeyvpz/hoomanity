@@ -11,6 +11,7 @@ import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
 import type { HoomanContainer } from "../../container.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
+import { formatCliErrorBrief } from "../../error-format.js";
 import type { SkillListEntry } from "../../../skills/registry.js";
 import type { SearchSkill } from "../../../skills/utils/search-skills-api.js";
 
@@ -104,7 +105,7 @@ export function SkillsScreen({
       const list = await container.skillsRegistry.list(agentId);
       setRows(list);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
     } finally {
       setLoading(false);
     }
@@ -115,7 +116,7 @@ export function SkillsScreen({
       const list = await container.skillsRegistry.list(agentId);
       setRows(list);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
     }
   }, [container, agentId]);
 
@@ -247,7 +248,7 @@ export function SkillsScreen({
                   await refresh();
                   setView("list");
                 } catch (e) {
-                  setInstallError(e instanceof Error ? e.message : String(e));
+                  setInstallError(formatCliErrorBrief(e));
                 }
               })();
             }}
@@ -312,7 +313,7 @@ export function SkillsScreen({
                         setFindUi("pick");
                       }
                     } catch (e) {
-                      setFindError(e instanceof Error ? e.message : String(e));
+                      setFindError(formatCliErrorBrief(e));
                     } finally {
                       setFindBusy(false);
                     }
@@ -374,9 +375,7 @@ export function SkillsScreen({
                         await refresh();
                         setView("list");
                       } catch (e) {
-                        setFindInstallError(
-                          e instanceof Error ? e.message : String(e),
-                        );
+                        setFindInstallError(formatCliErrorBrief(e));
                       } finally {
                         setFindInstallBusy(false);
                       }
@@ -440,7 +439,7 @@ export function SkillsScreen({
                   await refresh();
                   setView("list");
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : String(e));
+                  setActionError(formatCliErrorBrief(e));
                 }
               })();
             }}

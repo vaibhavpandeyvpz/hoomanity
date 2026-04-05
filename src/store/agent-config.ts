@@ -24,7 +24,8 @@ export async function write(
   agentId: string,
   config: AgentConfig,
 ): Promise<void> {
+  const validated = AgentConfigSchema.parse(config);
   const p = agentConfigPath(agentId);
   await mkdir(dirname(p), { recursive: true });
-  await writeFile(p, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  await writeFile(p, `${JSON.stringify(validated, null, 2)}\n`, "utf8");
 }

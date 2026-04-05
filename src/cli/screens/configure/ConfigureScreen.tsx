@@ -9,9 +9,11 @@ import { CreateAgentScreen } from "./CreateAgentScreen.js";
 import { RunScreen } from "../run/RunScreen.js";
 import { SkillsScreen } from "./SkillsScreen.js";
 import { McpServersScreen } from "./McpServersScreen.js";
+import { ChannelsScreen } from "./ChannelsScreen.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
 import { KeyHints } from "../../ui/KeyHints.js";
 import { theme } from "../../ui/theme.js";
+import { formatCliErrorBrief } from "../../error-format.js";
 
 export type ConfigureScreenProps = {
   readonly container: HoomanContainer;
@@ -27,7 +29,8 @@ type MainScreen =
   | { type: "edit"; agentId: string }
   | { type: "timeouts"; agentId: string; enabled: boolean }
   | { type: "skills"; agentId: string; enabled: boolean }
-  | { type: "mcp"; agentId: string; enabled: boolean };
+  | { type: "mcp"; agentId: string; enabled: boolean }
+  | { type: "channels"; agentId: string; enabled: boolean };
 
 type AgentRow = { id: string; name: string; enabled: boolean };
 
@@ -147,7 +150,7 @@ export function ConfigureScreen({ container }: ConfigureScreenProps) {
         );
         setAgents(enriched);
       } catch (e) {
-        setLoadError(e instanceof Error ? e.message : String(e));
+        setLoadError(formatCliErrorBrief(e));
       } finally {
         setLoading(false);
       }
@@ -361,6 +364,21 @@ export function ConfigureScreen({ container }: ConfigureScreenProps) {
     );
   }
 
+  if (screen.type === "channels") {
+    return (
+      <ChannelsScreen
+        agentId={screen.agentId}
+        onBack={() => {
+          setScreen({
+            type: "agent-menu",
+            agentId: screen.agentId,
+            enabled: screen.enabled,
+          });
+        }}
+      />
+    );
+  }
+
   if (screen.type === "delete-confirm") {
     return (
       <Box flexDirection="column">
@@ -404,7 +422,7 @@ export function ConfigureScreen({ container }: ConfigureScreenProps) {
                   await remove(screen.agentId);
                   goHome();
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : String(e));
+                  setActionError(formatCliErrorBrief(e));
                 }
               })();
             }}
@@ -426,6 +444,7 @@ export function ConfigureScreen({ container }: ConfigureScreenProps) {
       { label: "Update", value: "update" },
       { label: "Skills", value: "skills" as const },
       { label: "MCPs", value: "mcp" as const },
+      { label: "Channels", value: "channels" as const },
       ...(screen.enabled
         ? [{ label: "Disable", value: "disable" as const }]
         : [{ label: "Enable", value: "enable" as const }]),
@@ -476,6 +495,12 @@ export function ConfigureScreen({ container }: ConfigureScreenProps) {
               } else if (item.value === "mcp") {
                 setScreen({
                   type: "mcp",
+                  agentId: screen.agentId,
+                  enabled: screen.enabled,
+                });
+              } else if (item.value === "channels") {
+                setScreen({
+                  type: "channels",
                   agentId: screen.agentId,
                   enabled: screen.enabled,
                 });

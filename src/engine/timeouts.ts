@@ -42,3 +42,9 @@ export const DEFAULT_MAX_CONTEXT_TOKENS = 50_000;
 export function resolvedMaxContextTokens(config: AgentConfig): number {
   return config.maxContextTokens ?? DEFAULT_MAX_CONTEXT_TOKENS;
 }
+
+export {
+  DEFAULT_INBOUND_ATTACHMENTS_MAX_MB,
+  resolvedEnableFileInput,
+  resolvedInboundAttachmentsMaxBytes,
+} from "./agent-limits.js";

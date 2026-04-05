@@ -1,7 +1,6 @@
 import type { Model } from "@openai/agents";
 import type { AgentConfig } from "../store/types.js";
-import type { ModelProvider } from "./types.js";
-import type { ILlmProvider } from "./types.js";
+import type { AiSdkTextModel, ILlmProvider, ModelProvider } from "./types.js";
 
 export type LlmProviderLookup = {
   get(key: ModelProvider): ILlmProvider;
@@ -35,4 +34,18 @@ export function create(
     reasoningEnabled: config.reasoningEnabled,
   };
   return registry.get(config.provider).create(opts, config.model.trim());
+}
+
+/** Vercel AI SDK model for `generateText` (channel approvals, etc.). */
+export function createAiSdkTextModel(
+  registry: LlmProviderLookup,
+  config: AgentConfig,
+): AiSdkTextModel {
+  const opts = {
+    ...agentProviderOptions(config),
+    reasoningEnabled: config.reasoningEnabled,
+  };
+  return registry
+    .get(config.provider)
+    .createLanguageModel(opts, config.model.trim());
 }

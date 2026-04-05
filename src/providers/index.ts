@@ -27,9 +27,10 @@ export function createProviderWizard(p: ModelProvider): ProviderWizard {
   }
 }
 
-export { create } from "./factory.js";
+export { create, createAiSdkTextModel } from "./factory.js";
 export type { LlmProviderLookup } from "./factory.js";
 export type {
+  AiSdkTextModel,
   ILlmProvider,
   LlmProviderKey,
   ProviderWizard,

@@ -1,6 +1,8 @@
 import { protocol, run, type RunItem } from "@openai/agents";
 import type { HoomanContainer } from "../cli/container.js";
 import type { AgentContainer } from "./container.js";
+import type { Channel, ChannelMessage } from "../channels/types.js";
+import { buildRunModelInput } from "./multimodal-input.js";
 import {
   ApprovalsManager,
   type McpApprovalPrompt,
@@ -10,6 +12,7 @@ import {
   createRecollectSession,
   type RecollectSession,
 } from "./memory/recollect-session.js";
+import { assistantOutputSkipsUserDelivery } from "./response-skip.js";
 import { resolvedReasoningEnabled } from "./settings.js";
 import { resolvedAgentTimeouts, resolvedMaxTurns } from "./timeouts.js";
 
@@ -135,6 +138,60 @@ function formatFinalOutput(final: unknown): string {
   return JSON.stringify(final);
 }
 
+async function streamAssistantTextDelta(
+  channel: Channel | undefined,
+  accumulated: string,
+  onTextUpdate?: (text: string) => void,
+): Promise<void> {
+  if (channel) {
+    if (channel.supportsStreaming !== false) {
+      await channel.sendMessage(accumulated);
+    }
+    return;
+  }
+  onTextUpdate?.(accumulated);
+}
+
+async function sendAssistantTextFinal(
+  channel: Channel | undefined,
+  text: string,
+  onTextUpdate?: (t: string) => void,
+): Promise<void> {
+  if (channel) {
+    await channel.sendMessage(text);
+    return;
+  }
+  onTextUpdate?.(text);
+}
+
+async function notifyToolCallStart(
+  channel: Channel | undefined,
+  info: ToolCallStartInfo,
+  onToolCallStart?: (i: ToolCallStartInfo) => void,
+): Promise<void> {
+  if (channel?.sendToolCall) {
+    await channel.sendToolCall(info);
+    return;
+  }
+  if (!channel) {
+    onToolCallStart?.(info);
+  }
+}
+
+async function notifyToolCallEnd(
+  channel: Channel | undefined,
+  info: ToolCallEndInfo,
+  onToolCallEnd?: (i: ToolCallEndInfo) => void,
+): Promise<void> {
+  if (channel?.sendToolResult) {
+    await channel.sendToolResult(info);
+    return;
+  }
+  if (!channel) {
+    onToolCallEnd?.(info);
+  }
+}
+
 /** Delta from OpenAI Responses, AI SDK stream parts (Ollama/Anthropic/etc.), or chat-completions. */
 function extractReasoningDeltaFromRawModelStream(ev: {
   readonly type: string;
@@ -197,6 +254,7 @@ export async function openAgentSession(
   container: HoomanContainer,
   agentId: string,
   options?: {
+    channel?: Channel;
     mcpApprovalPrompt?: McpApprovalPrompt;
     sessionId?: string;
   },
@@ -210,10 +268,21 @@ export async function openAgentSession(
     options?.sessionId,
   );
   const approvals = await ApprovalsManager.open(id);
-  approvals.setPromptHandler(options?.mcpApprovalPrompt ?? null);
+
+  // If a channel is provided, we use its askApproval for tool approvals
+  const approvalPrompt: McpApprovalPrompt | null = options?.channel
+    ? async (info) =>
+        options.channel!.askApproval(info.toolName, JSON.stringify(info.input))
+    : (options?.mcpApprovalPrompt ?? null);
+
+  approvals.setPromptHandler(approvalPrompt);
+  const cliWorkingDirectory =
+    options?.channel?.type === "cli" ? process.cwd() : undefined;
+
   const { container: agentContainer, closeMcp: innerClose } =
     await container.create(id, {
       approvals,
+      ...(cliWorkingDirectory !== undefined ? { cliWorkingDirectory } : {}),
     });
   return {
     agentId: id,
@@ -230,6 +299,13 @@ export async function openAgentSession(
  * Runs one user turn using the SDK streaming path (`stream: true`); text deltas are forwarded as
  * they arrive. If the stream emits no text (e.g. tools only), the final formatted output is used.
  * History is kept on {@link OpenAgentSession.session}.
+ *
+ * `prompt` may be a plain string (CLI) or a {@link ChannelMessage}; structured messages become
+ * `### Channel message context` JSON plus the user `text`, and skip duplicate {@link Channel.getMetadata}
+ * prepending.
+ *
+ * If the model output contains `[response:skip]`, nothing is sent to the channel/CLI for that turn
+ * (empty string clears streaming CLI); the resolved return value is `""`.
  */
 export type TurnUsageSnapshot = {
   readonly inputTokens: number;
@@ -240,20 +316,24 @@ export type TurnUsageSnapshot = {
 
 export async function runAgentSessionTurnStreaming(
   open: OpenAgentSession,
-  prompt: string,
-  onTextUpdate: (text: string) => void,
+  prompt: string | ChannelMessage,
+  channel?: Channel,
   options?: {
     readonly onTurnComplete?: (usage: TurnUsageSnapshot) => void;
-    readonly onToolCallStart?: (info: ToolCallStartInfo) => void;
-    readonly onToolCallEnd?: (info: ToolCallEndInfo) => void;
+    /** Used when there is no {@link Channel} or it has no {@link Channel.sendReasoningUpdate}. */
     readonly onReasoningUpdate?: (reasoningSoFar: string) => void;
     readonly onStreamingOutputTpsEst?: (tokensPerSec: number | null) => void;
     readonly abortSignal?: AbortSignal;
+    /** Legacy callbacks: use channel instead if available */
+    readonly onTextUpdate?: (text: string) => void;
+    readonly onToolCallStart?: (info: ToolCallStartInfo) => void;
+    readonly onToolCallEnd?: (info: ToolCallEndInfo) => void;
   },
 ): Promise<string> {
-  const input = prompt.trim();
-  const agent = await open.agentContainer.value();
   const cfg = await readConfig(open.agentId);
+  const input = await buildRunModelInput(prompt, channel, cfg);
+
+  const agent = await open.agentContainer.value();
   const timeouts = resolvedAgentTimeouts(cfg);
   const maxTurns = resolvedMaxTurns(cfg);
   const streamReasoning = resolvedReasoningEnabled(cfg);
@@ -274,12 +354,24 @@ export async function runAgentSessionTurnStreaming(
   let reasoningAccum = "";
   let firstOutputTextAtMs: number | null = null;
 
-  const clearReasoningUi = (): void => {
-    if (reasoningAccum.length > 0) {
-      reasoningAccum = "";
-      options?.onReasoningUpdate?.("");
+  const emitReasoning = async (text: string): Promise<void> => {
+    if (channel && typeof channel.sendReasoningUpdate === "function") {
+      await channel.sendReasoningUpdate(text);
+    } else if (!channel) {
+      options?.onReasoningUpdate?.(text);
     }
   };
+
+  const clearReasoningUi = async (): Promise<void> => {
+    if (reasoningAccum.length > 0) {
+      reasoningAccum = "";
+      await emitReasoning("");
+    }
+  };
+
+  if (channel && typeof channel.setProcessingIndicator === "function") {
+    await channel.setProcessingIndicator("add");
+  }
 
   try {
     for await (const ev of streamed) {
@@ -289,12 +381,12 @@ export async function runAgentSessionTurnStreaming(
           : null;
         if (rd) {
           reasoningAccum += rd;
-          options?.onReasoningUpdate?.(reasoningAccum);
+          await emitReasoning(reasoningAccum);
         }
         if (ev.data.type === "output_text_delta") {
           const parsed = protocol.StreamEventTextStream.parse(ev.data);
           if (streamReasoning && parsed.delta.length > 0) {
-            clearReasoningUi();
+            await clearReasoningUi();
           }
           accumulated += parsed.delta;
           const now = Date.now();
@@ -309,18 +401,23 @@ export async function runAgentSessionTurnStreaming(
             const sec = elapsed / 1000;
             options?.onStreamingOutputTpsEst?.(estTok / Math.max(sec, 1e-6));
           }
-          onTextUpdate(accumulated);
+
+          await streamAssistantTextDelta(
+            channel,
+            accumulated,
+            options?.onTextUpdate,
+          );
         }
       } else if (ev.type === "run_item_stream_event") {
         if (ev.name === "tool_called") {
           const info = extractToolCallStart(ev.item);
           if (info) {
-            options?.onToolCallStart?.(info);
+            await notifyToolCallStart(channel, info, options?.onToolCallStart);
           }
         } else if (ev.name === "tool_output") {
           const info = extractToolOutputEnd(ev.item);
           if (info) {
-            options?.onToolCallEnd?.(info);
+            await notifyToolCallEnd(channel, info, options?.onToolCallEnd);
           }
         }
       }
@@ -336,10 +433,29 @@ export async function runAgentSessionTurnStreaming(
     });
     const finalFormatted = formatFinalOutput(streamed.finalOutput);
     const out = accumulated.length > 0 ? accumulated : finalFormatted;
-    onTextUpdate(out);
+
+    if (assistantOutputSkipsUserDelivery(out)) {
+      if (channel) {
+        if (channel.supportsStreaming !== false) {
+          await channel.sendMessage("");
+        }
+      } else {
+        options?.onTextUpdate?.("");
+      }
+      return "";
+    }
+
+    await sendAssistantTextFinal(channel, out, options?.onTextUpdate);
     return out;
   } finally {
-    options?.onReasoningUpdate?.("");
+    if (channel && typeof channel.setProcessingIndicator === "function") {
+      try {
+        await channel.setProcessingIndicator("remove");
+      } catch {
+        /* best-effort */
+      }
+    }
+    void emitReasoning("");
     options?.onStreamingOutputTpsEst?.(null);
   }
 }

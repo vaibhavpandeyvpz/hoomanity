@@ -1,4 +1,5 @@
 import type { Model } from "@openai/agents";
+import type { generateText } from "ai";
 import { z, type ZodTypeAny } from "zod";
 import {
   AnthropicProviderConfigSchema,
@@ -60,6 +61,12 @@ export type ProviderWizard = {
 };
 
 /**
+ * Language model handle accepted by Vercel AI SDK {@link generateText} (e.g. tool-approval copy).
+ * Distinct from Agents SDK {@link Model} returned by {@link ILlmProvider.create}.
+ */
+export type AiSdkTextModel = Parameters<typeof generateText>[0]["model"];
+
+/**
  * Pluggable model backend: Zod shape + AI SDK construction.
  * Implementations should depend only on npm packages and local modules under `providers/`.
  */
@@ -72,6 +79,15 @@ export interface ILlmProvider {
   schema(): ZodTypeAny;
 
   create(options: Record<string, unknown>, model: string): Model;
+
+  /**
+   * Same underlying model as {@link create} before the Agents `aisdk()` wrap — for `generateText`
+   * from the `ai` package.
+   */
+  createLanguageModel(
+    options: Record<string, unknown>,
+    model: string,
+  ): AiSdkTextModel;
 
   /**
    * Normalize wizard/draft values for persistence (trim empties, drop branch if unused).

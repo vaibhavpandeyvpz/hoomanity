@@ -125,4 +125,11 @@ export class BedrockLlmProvider implements ILlmProvider {
   ): ReturnType<ILlmProvider["create"]> {
     return aisdk(this.languageModel(options, model));
   }
+
+  createLanguageModel(
+    options: Record<string, unknown>,
+    model: string,
+  ): ReturnType<ILlmProvider["createLanguageModel"]> {
+    return this.languageModel(options, model);
+  }
 }

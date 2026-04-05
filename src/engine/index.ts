@@ -12,6 +12,8 @@ import { createReadSkillFileTool } from "../skills/tool.js";
 import { buildAgentIdentityInstructionsAppendix } from "../prompts/identity-builder.js";
 import { buildOperatingGuidelinesInstructionsAppendix } from "../prompts/operating-builder.js";
 import { buildCapabilityGuidanceInstructionsAppendix } from "../prompts/capability-builder.js";
+import { buildResponseSkipInstructionsAppendix } from "../prompts/response-skip-builder.js";
+import { buildCliCwdInstructionsAppendix } from "../prompts/cli-cwd-builder.js";
 import { buildSkillsCliInstructionsAppendix } from "../prompts/skills-cli-builder.js";
 import { createSkillsPrompt } from "../prompts/skills-builder.js";
 import {
@@ -31,6 +33,8 @@ export type CreateAgentDeps = {
 
 export type CreateAgentOptions = {
   readonly approvals: ApprovalsManager;
+  /** When set (CLI channel), appended to combined static instructions. */
+  readonly cliWorkingDirectory?: string;
 };
 
 /**
@@ -75,9 +79,13 @@ export async function create(
       timeoutMs: timeouts.toolCallTimeoutMs,
     });
     const fromFile = (await readInstructions(id)).trim();
+    const cliCwdAppendix = createOptions.cliWorkingDirectory
+      ? buildCliCwdInstructionsAppendix(createOptions.cliWorkingDirectory)
+      : "";
     const [
       identityAppendix,
       operatingAppendix,
+      responseSkipAppendix,
       skillsCliAppendix,
       capabilityAppendix,
       skillSuffix,
@@ -87,6 +95,7 @@ export async function create(
         displayName: config.name,
       }),
       buildOperatingGuidelinesInstructionsAppendix(),
+      buildResponseSkipInstructionsAppendix(),
       buildSkillsCliInstructionsAppendix(id),
       buildCapabilityGuidanceInstructionsAppendix(),
       createSkillsPrompt(id),
@@ -95,6 +104,8 @@ export async function create(
       fromFile,
       identityAppendix,
       operatingAppendix,
+      cliCwdAppendix,
+      responseSkipAppendix,
       skillSuffix,
       skillsCliAppendix,
       capabilityAppendix,

@@ -6,6 +6,7 @@ import { list as listRegistry } from "../../../store/agent-registry.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
 import { KeyHints } from "../../ui/KeyHints.js";
 import { theme } from "../../ui/theme.js";
+import { formatCliErrorBrief } from "../../error-format.js";
 
 type AgentRow = { id: string; name: string; enabled: boolean };
 
@@ -46,7 +47,7 @@ export function SelectAgentScreen({ onSelect, onExit }: Props) {
         );
         setAgents(enriched.filter((a) => a.enabled));
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(formatCliErrorBrief(e));
       } finally {
         setLoading(false);
       }

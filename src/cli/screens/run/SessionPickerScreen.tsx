@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import { listSessions, deleteSession } from "../../../store/session-list.js";
 import { generateSessionId } from "../../../engine/memory/constants.js";
+import { sessionIdForCliMain } from "../../../engine/memory/session-ids.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
 import { KeyHints } from "../../ui/KeyHints.js";
 import { theme } from "../../ui/theme.js";
@@ -66,7 +67,8 @@ export function SessionPickerScreen({
   const [view, setView] = useState<View>("list");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  const highlightedRef = useRef<string | null>(null);
+  /** SelectInput’s highlighted row `value` (synced in onHighlight). */
+  const [highlightedValue, setHighlightedValue] = useState<string>("__new__");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,6 +85,32 @@ export function SessionPickerScreen({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const items = useMemo(() => {
+    const list: { label: string; value: string }[] = [
+      { label: "+ New session", value: "__new__" },
+      { label: "Main", value: "__main__" },
+    ];
+    for (const s of sessions) {
+      const time = relativeTime(s.updatedAt);
+      const msgs = s.messageCount === 1 ? "1 msg" : `${s.messageCount} msgs`;
+      list.push({
+        label: `${s.id} — ${msgs} · ${time}`,
+        value: `open:${s.id}`,
+      });
+    }
+    list.push({ label: "Back", value: "__back__" });
+    return list;
+  }, [sessions]);
+
+  useEffect(() => {
+    if (loading || view !== "list") return;
+    setHighlightedValue((prev) =>
+      items.some((i) => i.value === prev)
+        ? prev
+        : (items[0]?.value ?? "__new__"),
+    );
+  }, [loading, view, items]);
 
   useInput(
     (input, key) => {
@@ -103,30 +131,16 @@ export function SessionPickerScreen({
         view === "list" &&
         input === "d" &&
         !key.ctrl &&
-        highlightedRef.current
+        highlightedValue.startsWith("open:")
       ) {
-        setPendingDeleteId(highlightedRef.current);
+        setPendingDeleteId(highlightedValue.slice("open:".length));
         setView("delete-confirm");
       }
     },
     { isActive: true },
   );
 
-  const items = useMemo(() => {
-    const list: { label: string; value: string }[] = [
-      { label: "+ New session", value: "__new__" },
-    ];
-    for (const s of sessions) {
-      const time = relativeTime(s.updatedAt);
-      const msgs = s.messageCount === 1 ? "1 msg" : `${s.messageCount} msgs`;
-      list.push({
-        label: `${s.id} — ${msgs} · ${time}`,
-        value: `open:${s.id}`,
-      });
-    }
-    list.push({ label: "Back", value: "__back__" });
-    return list;
-  }, [sessions]);
+  const canDeleteHighlighted = highlightedValue.startsWith("open:");
 
   if (loading) {
     return (
@@ -201,23 +215,28 @@ export function SessionPickerScreen({
               onSelect(generateSessionId());
               return;
             }
+            if (item.value === "__main__") {
+              onSelect(sessionIdForCliMain());
+              return;
+            }
             if (item.value.startsWith("open:")) {
               const sid = item.value.slice("open:".length);
               onSelect(sid);
             }
           }}
           onHighlight={(item) => {
-            if (item.value.startsWith("open:")) {
-              highlightedRef.current = item.value.slice("open:".length);
-            } else {
-              highlightedRef.current = null;
-            }
+            setHighlightedValue(item.value);
           }}
         />
       </Box>
       <KeyHints mode="custom">
-        <Text dimColor>↑↓ · enter — open · </Text>
-        <Text color={theme.error}>d — delete</Text>
+        <Text dimColor>↑↓ · enter — open</Text>
+        {canDeleteHighlighted ? (
+          <>
+            <Text dimColor> · </Text>
+            <Text color={theme.error}>d — delete</Text>
+          </>
+        ) : null}
         <Text dimColor> · esc — back · ctrl+c — quit</Text>
       </KeyHints>
     </Box>

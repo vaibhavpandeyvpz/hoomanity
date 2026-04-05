@@ -8,6 +8,7 @@ import {
 } from "@openai/agents";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { log } from "../logging/app-logger.js";
 import { read as readMcpFile } from "../store/mcp-config.js";
 import type { McpFile, McpToolFilterStatic } from "../store/types.js";
 
@@ -71,9 +72,64 @@ function stdioServerOptions(s: {
   };
 }
 
+/**
+ * Forward MCP child stderr (piped by {@link StdioClientTransport}) into the app logger.
+ * Attach before `connect()` so early process output is not lost (per SDK docs).
+ */
+function pipeMcpStdioToAppLog(
+  transport: StdioClientTransport,
+  serverName: string,
+): void {
+  const stream = transport.stderr;
+  if (!stream || typeof stream.on !== "function") {
+    return;
+  }
+  let carry = "";
+  stream.on("data", (chunk: Buffer | string) => {
+    carry += typeof chunk === "string" ? chunk : chunk.toString("utf8");
+    const parts = carry.split(/\r?\n/);
+    carry = parts.pop() ?? "";
+    for (const line of parts) {
+      const t = line.trim();
+      if (t) {
+        log.info(`[mcp:${serverName}] ${t}`);
+      }
+    }
+  });
+  stream.on("end", () => {
+    const t = carry.trim();
+    if (t) {
+      log.info(`[mcp:${serverName}] ${t}`);
+    }
+    carry = "";
+  });
+  stream.on("error", (err: unknown) => {
+    log.warn(`[mcp:${serverName}] stderr stream error`, err);
+  });
+}
+
+/** Internal shape of {@link MCPServerStdio} used by our `connect` override (not exported by the SDK). */
+type McpStdioServerUnderlying = {
+  params: {
+    command: string;
+    args: string[];
+    env?: Record<string, string>;
+    cwd?: string;
+  };
+  transport?: StdioClientTransport;
+  session: Client;
+  _name: string;
+  clientSessionTimeoutSeconds?: number;
+  serverInitializeResult?: {
+    serverInfo: { name: string; version: string };
+  };
+  close(): Promise<void>;
+};
+
 class QuietMCPServerStdio extends MCPServerStdio {
   override async connect(): Promise<void> {
-    const u: any = (this as any).underlying;
+    const u = (this as unknown as { underlying: McpStdioServerUnderlying })
+      .underlying;
     const { command, args, env, cwd } = u.params;
 
     u.transport = new StdioClientTransport({
@@ -83,6 +139,7 @@ class QuietMCPServerStdio extends MCPServerStdio {
       cwd,
       stderr: "pipe",
     });
+    pipeMcpStdioToAppLog(u.transport, u._name);
 
     u.session = new Client({
       name: u._name,

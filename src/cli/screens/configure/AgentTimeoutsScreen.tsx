@@ -16,6 +16,7 @@ import {
   resolvedMaxTurns,
 } from "../../../engine/timeouts.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
+import { formatCliErrorBrief } from "../../error-format.js";
 
 export type AgentTimeoutsScreenProps = {
   readonly agentId: string;
@@ -124,7 +125,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
       setCfg(c);
       setStep("menu");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
       setStep("error");
     }
   }, [agentId]);
@@ -189,7 +190,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
       await writeConfig(agentId, next);
       setCfg(next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
     }
   };
 
@@ -201,7 +202,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
       await writeConfig(agentId, next);
       setCfg(next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
     }
   };
 
@@ -213,7 +214,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
       await writeConfig(agentId, next);
       setCfg(next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
     }
   };
 
@@ -234,7 +235,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
       await writeConfig(agentId, next);
       setCfg(next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
     }
   };
 
@@ -477,7 +478,7 @@ export const AgentTimeoutsScreen: FC<AgentTimeoutsScreenProps> = ({
                   setCfg(next);
                   setStep("menu");
                 } catch (e) {
-                  setError(e instanceof Error ? e.message : String(e));
+                  setError(formatCliErrorBrief(e));
                 }
               })();
             }}

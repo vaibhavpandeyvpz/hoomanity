@@ -22,6 +22,45 @@ export const AgentTimeoutsSchema = z
 
 export type AgentTimeouts = z.infer<typeof AgentTimeoutsSchema>;
 
+export const SlackConfigSchema = z
+  .object({
+    /** Bot token (xoxb-...). Optional if {@link userToken} alone is used for Bolt + API. */
+    token: z.string().default(""),
+    signingSecret: z.string().min(1),
+    appToken: z.string().min(1),
+    /**
+     * User OAuth token (e.g. xoxp-...). May be the only token (Bolt + Web API + file downloads).
+     * Required whenever {@link token} is set (file access).
+     */
+    userToken: z.string().default(""),
+  })
+  .superRefine((data, ctx) => {
+    const bot = data.token.trim();
+    const user = data.userToken.trim();
+    if (!bot && !user) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Set a user token by itself, or a bot token together with a user token.",
+        path: ["userToken"],
+      });
+    }
+    if (bot && !user) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "User token is required when a bot token is set (required for file access).",
+        path: ["userToken"],
+      });
+    }
+  });
+export type SlackConfig = z.infer<typeof SlackConfigSchema>;
+
+export const WhatsAppConfigSchema = z.object({
+  sessionName: z.string().min(1).default("default"),
+});
+export type WhatsAppConfig = z.infer<typeof WhatsAppConfigSchema>;
+
 /**
  * JSON shape for the agent config file (`AGENT_CONFIG_BASENAME` in `agents/files.ts`).
  * System instructions use `AGENT_INSTRUCTIONS_BASENAME` on disk, not this object.
@@ -53,6 +92,18 @@ export const AgentConfigSchema = z.object({
    * When true or omitted, uses provider defaults (Ollama requests thinking; OpenAI default reasoning).
    */
   reasoningEnabled: z.boolean().optional(),
+  /**
+   * When true, non-image inbound attachments are sent as `input_file` parts (data URLs).
+   * Images still use `input_image` when MIME is jpeg/png/gif/webp.
+   */
+  enableFileInput: z.boolean().optional(),
+  /**
+   * Max total size (MB) of files under each session’s `attachments/` dir; oldest files are
+   * deleted when exceeded. Default 512 when omitted.
+   */
+  inboundAttachmentsMaxMb: z.number().int().min(16).max(50_000).optional(),
+  slack: SlackConfigSchema.optional(),
+  whatsapp: WhatsAppConfigSchema.optional(),
 });
 
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;

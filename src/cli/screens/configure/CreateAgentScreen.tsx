@@ -31,6 +31,7 @@ import {
 import { finalizeAgentConfig } from "../../utils/finalize-agent-config.js";
 import { HoomanBanner } from "../../ui/HoomanBanner.js";
 import { KeyHints } from "../../ui/KeyHints.js";
+import { formatCliErrorBrief } from "../../error-format.js";
 
 export type CreateAgentScreenProps = {
   readonly container: HoomanContainer;
@@ -163,7 +164,7 @@ export function CreateAgentScreen({
         setBedrock(cfg.bedrock ?? {});
         setOllama(cfg.ollama ?? {});
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(formatCliErrorBrief(e));
       } finally {
         setBooting(false);
       }
@@ -283,7 +284,7 @@ export function CreateAgentScreen({
         );
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatCliErrorBrief(e));
     }
   }, [
     anthropic,
@@ -603,7 +604,7 @@ export function CreateAgentScreen({
                   setInstructions(text.endsWith("\n") ? text : `${text}\n`);
                   setStep(2);
                 } catch (e) {
-                  setError(e instanceof Error ? e.message : String(e));
+                  setError(formatCliErrorBrief(e));
                 }
               }}
             />
