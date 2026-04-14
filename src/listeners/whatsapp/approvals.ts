@@ -2,7 +2,7 @@ import type { PermissionOption } from "@agentclientprotocol/sdk";
 import type { ApprovalService } from "../../core/approval-service";
 import { log } from "../../core/logger";
 
-export type WwebjsPendingApproval = {
+export type WhatsAppPendingApproval = {
   requestId: string;
   options: PermissionOption[];
 };
@@ -29,14 +29,15 @@ export function parseApprovalReplyText(text: string): ApprovalReplyIntent {
   ) {
     return "approve_always";
   }
-  if (["n", "no", "reject", "deny", "cancel"].includes(normalized))
+  if (["n", "no", "reject", "deny", "cancel"].includes(normalized)) {
     return "reject";
+  }
   return "ignore";
 }
 
 export function resolveApprovalFromText(
   approvals: ApprovalService,
-  pending: WwebjsPendingApproval,
+  pending: WhatsAppPendingApproval,
   text: string,
 ): boolean {
   const intent = parseApprovalReplyText(text);
@@ -62,7 +63,8 @@ export function resolveApprovalFromText(
   const allowOnce =
     findOptionByKind(pending.options, "allow_once") ?? pending.options[0];
   if (!allowOnce) {
-    log("warn", "wwebjs", "no approval option available to select", {
+    log.warn("no approval option available to select", {
+      scope: "whatsapp",
       requestId: pending.requestId,
     });
     return approvals.cancel(pending.requestId);
@@ -74,5 +76,5 @@ function findOptionByKind(
   options: PermissionOption[],
   kind: string,
 ): PermissionOption | undefined {
-  return options.find((o) => o.kind === kind);
+  return options.find((option) => option.kind === kind);
 }

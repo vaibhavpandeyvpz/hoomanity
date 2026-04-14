@@ -8,7 +8,7 @@ import type {
   PlatformReplyTarget,
   TurnHooks,
   TurnResult,
-} from "./types";
+} from "../contracts";
 import { log } from "./logger";
 
 export class CoreOrchestrator {
@@ -35,7 +35,8 @@ export class CoreOrchestrator {
     try {
       await this.acpClient.cancelSessionTurn(sessionId);
     } catch (error) {
-      log("warn", "orchestrator", "session cancel failed", {
+      log.warn("session cancel failed", {
+        scope: "orchestrator",
         conversationKey,
         sessionId,
         error: error instanceof Error ? error.message : String(error),
@@ -62,7 +63,8 @@ export class CoreOrchestrator {
       this.defaultCwd,
       replyTarget,
     );
-    log("info", "orchestrator", "conversation reset", {
+    log.info("conversation reset", {
+      scope: "orchestrator",
       conversationKey,
       previousSessionId: previous?.sessionId,
       sessionId,
@@ -74,7 +76,8 @@ export class CoreOrchestrator {
     prompt: PlatformPrompt,
     hooks: TurnHooks = {},
   ): Promise<TurnResult | undefined> {
-    log("info", "orchestrator", "enqueue prompt", {
+    log.info("enqueue prompt", {
+      scope: "orchestrator",
       platform: prompt.platform,
       conversationKey: prompt.conversationKey,
     });
@@ -99,16 +102,12 @@ export class CoreOrchestrator {
           try {
             await this.acpClient.ensurePersistedSessionReady(sessionId, cwd);
           } catch (error) {
-            log(
-              "warn",
-              "orchestrator",
-              "loadSession failed; starting new session",
-              {
-                conversationKey: prompt.conversationKey,
-                sessionId,
-                error: error instanceof Error ? error.message : String(error),
-              },
-            );
+            log.warn("loadSession failed; starting new session", {
+              scope: "orchestrator",
+              conversationKey: prompt.conversationKey,
+              sessionId,
+              error: error instanceof Error ? error.message : String(error),
+            });
             sessionId = await this.acpClient.newSession(this.defaultCwd);
             cwd = this.defaultCwd;
           }
@@ -117,15 +116,11 @@ export class CoreOrchestrator {
           cwd = this.defaultCwd;
         }
 
-        log(
-          "info",
-          "orchestrator",
-          memory ? "reusing session" : "session for turn",
-          {
-            conversationKey: prompt.conversationKey,
-            sessionId,
-          },
-        );
+        log.info(memory ? "reusing session" : "session for turn", {
+          scope: "orchestrator",
+          conversationKey: prompt.conversationKey,
+          sessionId,
+        });
 
         this.sessionRegistry.upsert(
           prompt.conversationKey,
@@ -168,7 +163,8 @@ export class CoreOrchestrator {
             await hooks.onCompleted(result);
           }
 
-          log("info", "orchestrator", "turn completed", {
+          log.info("turn completed", {
+            scope: "orchestrator",
             conversationKey: prompt.conversationKey,
             sessionId,
             stopReason: response.stopReason,
@@ -177,7 +173,8 @@ export class CoreOrchestrator {
 
           return result;
         } catch (error) {
-          log("error", "orchestrator", "turn failed", {
+          log.error("turn failed", {
+            scope: "orchestrator",
             conversationKey: prompt.conversationKey,
             sessionId,
             error: error instanceof Error ? error.message : String(error),
@@ -192,7 +189,8 @@ export class CoreOrchestrator {
       });
     } catch (error) {
       if (isTurnQueueDroppedError(error)) {
-        log("info", "orchestrator", "prompt dropped after conversation reset", {
+        log.info("prompt dropped after conversation reset", {
+          scope: "orchestrator",
           conversationKey: prompt.conversationKey,
         });
         return undefined;

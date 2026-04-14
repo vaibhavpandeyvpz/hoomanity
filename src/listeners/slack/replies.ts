@@ -3,7 +3,8 @@ import type {
   ApprovalRequest,
   PlatformReplyTarget,
   TurnResult,
-} from "../../core/types";
+} from "../../contracts";
+import type { IFormatter } from "../../core/formatter";
 import { toUserFacingErrorMessage } from "../../core/user-facing-error";
 
 export class SlackReplies {
@@ -12,7 +13,10 @@ export class SlackReplies {
     { channel: string; ts: string }
   >();
 
-  constructor(private readonly client: WebClient) {}
+  constructor(
+    private readonly client: WebClient,
+    private readonly formatter: IFormatter,
+  ) {}
 
   async postFinal(
     target: PlatformReplyTarget,
@@ -23,7 +27,7 @@ export class SlackReplies {
     await this.client.chat.postMessage({
       channel: target.channelId,
       thread_ts: target.threadTs,
-      text,
+      text: this.formatOne(text),
     });
   }
 
@@ -31,7 +35,7 @@ export class SlackReplies {
     await this.client.chat.postMessage({
       channel: target.channelId,
       thread_ts: target.threadTs,
-      text: `Error processing request: ${toMessage(error)}`,
+      text: this.formatOne(`Error processing request: ${toMessage(error)}`),
     });
   }
 
@@ -39,7 +43,7 @@ export class SlackReplies {
     await this.client.chat.postMessage({
       channel: target.channelId,
       thread_ts: target.threadTs,
-      text,
+      text: this.formatOne(text),
     });
   }
 
@@ -74,7 +78,9 @@ export class SlackReplies {
     target: PlatformReplyTarget,
     request: ApprovalRequest,
   ): Promise<void> {
-    const text = `Tool approval required: ${request.toolCall.title}`;
+    const text = this.formatOne(
+      `Tool approval required: ${request.toolCall.title}`,
+    );
     const response = await this.client.chat.postMessage({
       channel: target.channelId,
       thread_ts: target.threadTs,
@@ -139,17 +145,21 @@ export class SlackReplies {
     await this.client.chat.update({
       channel: posted.channel,
       ts: posted.ts,
-      text: `Approval resolved: ${label}`,
+      text: this.formatOne(`Approval resolved: ${label}`),
       blocks: [
         {
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `Approval resolved: *${label}*`,
+            text: this.formatOne(`Approval resolved: **${label}**`),
           },
         },
       ],
     });
+  }
+
+  private formatOne(text: string): string {
+    return this.formatter.format(text)[0] ?? text;
   }
 }
 

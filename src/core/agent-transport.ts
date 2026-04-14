@@ -25,7 +25,8 @@ export class StdioAgentTransport implements AgentTransport {
       throw new Error("ACP stdio transport is already open.");
     }
 
-    log("info", "transport", "spawning ACP stdio process", {
+    log.info("spawning ACP stdio process", {
+      scope: "transport",
       cwd: this.cwd,
       command: this.command,
     });
@@ -37,7 +38,7 @@ export class StdioAgentTransport implements AgentTransport {
 
     this.child = child;
     await this.assertLikelyAcpOutput(child);
-    log("info", "transport", "ACP stdio process looks healthy");
+    log.info("ACP stdio process looks healthy", { scope: "transport" });
 
     const writable = Writable.toWeb(child.stdin);
     const readable = Readable.toWeb(
@@ -53,7 +54,7 @@ export class StdioAgentTransport implements AgentTransport {
         }
         const running = this.child;
         this.child = undefined;
-        log("info", "transport", "stopping ACP stdio process");
+        log.info("stopping ACP stdio process", { scope: "transport" });
         running.kill("SIGTERM");
       },
     };

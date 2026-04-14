@@ -1,23 +1,16 @@
-/** Default `stop_commands` when the key is omitted from config. */
-export const DEFAULT_STOP_COMMAND_PHRASES: readonly string[] = [
-  "stop",
-  "abort",
-];
-
-export type UserControlCommand = "cancel" | "reset";
+import { type UserControlCommand } from "../contracts";
+export type { UserControlCommand };
 
 /**
- * Parses built-in chat control commands plus configured stop phrases.
+ * Parses built-in chat control commands.
  *
  * Built-ins:
  * - `/reset` starts a fresh session for the same conversation
  * - `/stop` and `/cancel` cancel in-flight work
  *
- * Custom stop phrases from config also map to `"cancel"`.
  */
 export function parseUserControlCommand(
   text: string,
-  stopPhrases: string[],
 ): UserControlCommand | undefined {
   const normalized = normalizePhrase(text);
   if (!normalized) {
@@ -29,16 +22,11 @@ export function parseUserControlCommand(
   if (normalized === "/stop" || normalized === "/cancel") {
     return "cancel";
   }
-  for (const phrase of stopPhrases) {
-    if (normalizePhrase(phrase) === normalized) {
-      return "cancel";
-    }
-  }
   return undefined;
 }
 
-export function isUserStopCommand(text: string, phrases: string[]): boolean {
-  return parseUserControlCommand(text, phrases) === "cancel";
+export function isUserStopCommand(text: string): boolean {
+  return parseUserControlCommand(text) === "cancel";
 }
 
 function normalizePhrase(value: string): string {

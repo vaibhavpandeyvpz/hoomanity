@@ -1,10 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { WebClient } from "@slack/web-api";
-import type { PlatformPrompt, PlatformReplyTarget } from "../../core/types";
+import type { PlatformPrompt, PlatformReplyTarget } from "../../contracts";
 import { log } from "../../core/logger";
+import { attachmentsDir } from "../../paths";
 import {
   combineSlackMessageText,
   textFromSlackBlocks,
@@ -67,7 +67,7 @@ function sanitizeFilename(name: string): string {
 }
 
 function getAttachmentsRoot(): string {
-  return join(homedir(), ".hooman", "attachments");
+  return attachmentsDir;
 }
 
 async function saveBufferToAttachments(
@@ -103,7 +103,8 @@ async function downloadSlackFiles(
         headers: { Authorization: `Bearer ${botToken}` },
       });
       if (!res.ok) {
-        log("warn", "slack", "file download failed", {
+        log.warn("file download failed", {
+          scope: "slack",
           name: file.name,
           status: res.status,
         });
@@ -114,7 +115,8 @@ async function downloadSlackFiles(
         res.headers.get("content-type")?.toLowerCase().split(";")[0].trim() ??
         "";
       if (contentTypeHeader === "text/html" || isHtmlResponse(buf)) {
-        log("warn", "slack", "file download returned HTML, skipping", {
+        log.warn("file download returned HTML, skipping", {
+          scope: "slack",
           name: file.name,
         });
         continue;
@@ -129,7 +131,8 @@ async function downloadSlackFiles(
           : contentTypeHeader || "application/octet-stream";
       out.push(await saveBufferToAttachments(buf, name, mime));
     } catch (e) {
-      log("warn", "slack", "file download error", {
+      log.warn("file download error", {
+        scope: "slack",
         name: file.name,
         error: e instanceof Error ? e.message : String(e),
       });
@@ -268,7 +271,7 @@ async function resolveSlackChannelDisplayName(
 
 /**
  * Build {@link PlatformPrompt} from a Slack Events API envelope (Socket Mode body),
- * aligned with apps/backend slack-adapter: combined text + blocks, optional thread parent, files → ~/.hooman/attachments.
+ * aligned with apps/backend slack-adapter: combined text + blocks, optional thread parent, files -> ~/.hoomanity/attachments.
  */
 export async function buildSlackPlatformPrompt(
   envelope: SlackEnvelope,

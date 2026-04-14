@@ -3,7 +3,7 @@ import type {
   RequestPermissionOutcome,
   ToolCallUpdate,
 } from "@agentclientprotocol/sdk";
-import type { ApprovalRequest } from "./types";
+import type { ApprovalRequest } from "../contracts";
 import { log } from "./logger";
 
 type PendingApproval = {
@@ -33,7 +33,8 @@ export class ApprovalService {
     options: PermissionOption[];
   }): Promise<RequestPermissionOutcome> {
     const requestId = crypto.randomUUID();
-    log("info", "approval", "approval request created", {
+    log.info("approval request created", {
+      scope: "approval",
       requestId,
       sessionId: input.sessionId,
       optionCount: input.options.length,
@@ -43,7 +44,8 @@ export class ApprovalService {
     const outcomePromise = new Promise<RequestPermissionOutcome>((resolve) => {
       const timeoutHandle = setTimeout(() => {
         this.pending.delete(requestId);
-        log("warn", "approval", "approval request timed out", {
+        log.warn("approval request timed out", {
+          scope: "approval",
           requestId,
           sessionId: input.sessionId,
         });
@@ -69,7 +71,8 @@ export class ApprovalService {
         await subscriber(request);
       }
     } catch (error) {
-      log("error", "approval", "approval dispatch failed, cancelling request", {
+      log.error("approval dispatch failed, cancelling request", {
+        scope: "approval",
         requestId,
         sessionId: input.sessionId,
         error: error instanceof Error ? error.message : String(error),
@@ -81,7 +84,8 @@ export class ApprovalService {
   }
 
   selectOption(requestId: string, optionId: string): boolean {
-    log("info", "approval", "approval option selected", {
+    log.info("approval option selected", {
+      scope: "approval",
       requestId,
       optionId,
     });
@@ -92,7 +96,7 @@ export class ApprovalService {
   }
 
   cancel(requestId: string): boolean {
-    log("info", "approval", "approval cancelled", { requestId });
+    log.info("approval cancelled", { scope: "approval", requestId });
     return this.finish(requestId, { outcome: "cancelled" });
   }
 

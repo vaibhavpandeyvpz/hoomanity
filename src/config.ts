@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
-import type { IdAllowlist } from "./core/allowlist";
-import { DEFAULT_STOP_COMMAND_PHRASES } from "./core/stop-command";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
+import type { IdAllowlist } from "./contracts";
+import { configFilePath } from "./paths";
 
 export type AppConfig = {
   acp: {
@@ -12,26 +12,18 @@ export type AppConfig = {
   approvals: {
     timeout_ms: number;
   };
-  /** Exact user messages (after trim) that trigger session cancel; case-insensitive. Empty disables. */
-  stop_commands: string[];
   slack: {
     enabled: boolean;
     bot_token?: string;
     app_token?: string;
     allowlist: IdAllowlist;
   };
-  whatsapp: {
+  telegram: {
     enabled: boolean;
-    access_token?: string;
-    phone_number_id?: string;
-    verify_token?: string;
-    app_secret?: string;
-    webhook_base_url?: string;
-    webhook_port?: number;
-    webhook_path?: string;
+    bot_token?: string;
     allowlist: IdAllowlist;
   };
-  wwebjs: {
+  whatsapp: {
     enabled: boolean;
     session_path?: string;
     client_id?: string;
@@ -41,23 +33,82 @@ export type AppConfig = {
 };
 
 type SlackAllowlistFileValue = "*" | string[];
+type TelegramAllowlistFileValue = "*" | string | string[];
 type WhatsAppAllowlistFileValue = "*" | string | string[];
 
-type FileConfig = Partial<Omit<AppConfig, "slack" | "whatsapp" | "wwebjs">> & {
+type FileConfig = Partial<
+  Omit<AppConfig, "slack" | "telegram" | "whatsapp">
+> & {
   slack?: Partial<Omit<AppConfig["slack"], "allowlist">> & {
     allowlist?: SlackAllowlistFileValue;
   };
-  whatsapp?: Partial<Omit<AppConfig["whatsapp"], "allowlist">> & {
-    allowlist?: WhatsAppAllowlistFileValue;
+  telegram?: Partial<Omit<AppConfig["telegram"], "allowlist">> & {
+    allowlist?: TelegramAllowlistFileValue;
   };
-  wwebjs?: Partial<Omit<AppConfig["wwebjs"], "allowlist">> & {
+  whatsapp?: Partial<Omit<AppConfig["whatsapp"], "allowlist">> & {
     allowlist?: WhatsAppAllowlistFileValue;
   };
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
-  const configPath =
-    env.HOOMAN_CONFIG_PATH ?? join(homedir(), ".hooman", "config.json");
+  const { configPath, config } = resolveConfig(env);
+  validateConfig(config, configPath);
+  return config;
+}
+
+export function loadEditableConfig(env: NodeJS.ProcessEnv = process.env): {
+  configPath: string;
+  config: AppConfig;
+} {
+  return resolveConfig(env);
+}
+
+export async function writeEditableConfig(
+  config: AppConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<string> {
+  const configPath = getConfigPath(env);
+  const payload: FileConfig = {
+    acp: {
+      cmd: config.acp.cmd,
+      cwd: config.acp.cwd,
+    },
+    approvals: {
+      timeout_ms: config.approvals.timeout_ms,
+    },
+    slack: {
+      enabled: config.slack.enabled,
+      bot_token: config.slack.bot_token,
+      app_token: config.slack.app_token,
+      allowlist: config.slack.allowlist,
+    },
+    telegram: {
+      enabled: config.telegram.enabled,
+      bot_token: config.telegram.bot_token,
+      allowlist: config.telegram.allowlist,
+    },
+    whatsapp: {
+      enabled: config.whatsapp.enabled,
+      session_path: config.whatsapp.session_path,
+      client_id: config.whatsapp.client_id,
+      puppeteer_executable_path: config.whatsapp.puppeteer_executable_path,
+      allowlist: config.whatsapp.allowlist,
+    },
+  };
+  await mkdir(dirname(configPath), { recursive: true });
+  await writeFile(configPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  return configPath;
+}
+
+export function getConfigPath(env: NodeJS.ProcessEnv = process.env): string {
+  return env.HOOMANITY_CONFIG_PATH ?? configFilePath;
+}
+
+function resolveConfig(env: NodeJS.ProcessEnv): {
+  configPath: string;
+  config: AppConfig;
+} {
+  const configPath = getConfigPath(env);
   const fromFile = loadFileConfig(configPath) ?? {};
 
   const config: AppConfig = {
@@ -71,86 +122,42 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         fromFile.approvals?.timeout_ms ??
         120000,
     },
-    stop_commands: resolveStopCommands(fromFile, configPath),
     slack: {
       enabled: parseBool(env.SLACK_ENABLED) ?? fromFile.slack?.enabled ?? false,
       bot_token: env.SLACK_BOT_TOKEN ?? fromFile.slack?.bot_token,
       app_token: env.SLACK_APP_TOKEN ?? fromFile.slack?.app_token,
       allowlist: resolveSlackAllowlist(fromFile, configPath),
     },
+    telegram: {
+      enabled:
+        parseBool(env.TELEGRAM_ENABLED) ?? fromFile.telegram?.enabled ?? false,
+      bot_token: env.TELEGRAM_BOT_TOKEN ?? fromFile.telegram?.bot_token,
+      allowlist: resolveGenericAllowlist(
+        fromFile.telegram?.allowlist,
+        "telegram.allowlist",
+        configPath,
+      ),
+    },
     whatsapp: {
       enabled:
         parseBool(env.WHATSAPP_ENABLED) ?? fromFile.whatsapp?.enabled ?? false,
-      access_token:
-        env.WHATSAPP_ACCESS_TOKEN ?? fromFile.whatsapp?.access_token,
-      phone_number_id:
-        env.WHATSAPP_PHONE_NUMBER_ID ?? fromFile.whatsapp?.phone_number_id,
-      verify_token:
-        env.WHATSAPP_VERIFY_TOKEN ?? fromFile.whatsapp?.verify_token,
-      app_secret: env.WHATSAPP_APP_SECRET ?? fromFile.whatsapp?.app_secret,
-      webhook_base_url:
-        env.WHATSAPP_WEBHOOK_BASE_URL ?? fromFile.whatsapp?.webhook_base_url,
-      webhook_port:
-        parsePositiveInt(env.WHATSAPP_WEBHOOK_PORT) ??
-        fromFile.whatsapp?.webhook_port,
-      webhook_path:
-        env.WHATSAPP_WEBHOOK_PATH ??
-        fromFile.whatsapp?.webhook_path ??
-        "/whatsapp/webhook",
-      allowlist: resolveWhatsAppAllowlist(
+      session_path:
+        env.WHATSAPP_SESSION_PATH ??
+        fromFile.whatsapp?.session_path ??
+        "default",
+      client_id:
+        env.WHATSAPP_CLIENT_ID ?? fromFile.whatsapp?.client_id ?? "default",
+      puppeteer_executable_path:
+        env.WHATSAPP_PUPPETEER_EXECUTABLE_PATH ??
+        fromFile.whatsapp?.puppeteer_executable_path,
+      allowlist: resolveGenericAllowlist(
         fromFile.whatsapp?.allowlist,
         "whatsapp.allowlist",
         configPath,
       ),
     },
-    wwebjs: {
-      enabled:
-        parseBool(env.WWEBJS_ENABLED) ?? fromFile.wwebjs?.enabled ?? false,
-      session_path:
-        env.WWEBJS_SESSION_PATH ?? fromFile.wwebjs?.session_path ?? "default",
-      client_id:
-        env.WWEBJS_CLIENT_ID ?? fromFile.wwebjs?.client_id ?? "default",
-      puppeteer_executable_path:
-        env.WWEBJS_PUPPETEER_EXECUTABLE_PATH ??
-        fromFile.wwebjs?.puppeteer_executable_path,
-      allowlist: resolveWhatsAppAllowlist(
-        fromFile.wwebjs?.allowlist,
-        "wwebjs.allowlist",
-        configPath,
-      ),
-    },
   };
-
-  validateConfig(config, configPath);
-  return config;
-}
-
-function resolveStopCommands(
-  fromFile: FileConfig,
-  configPath: string,
-): string[] {
-  const raw = fromFile.stop_commands;
-  if (raw === undefined) {
-    return [...DEFAULT_STOP_COMMAND_PHRASES];
-  }
-  if (!Array.isArray(raw)) {
-    throw new Error(
-      `Invalid config at "${configPath}": stop_commands must be a JSON array of strings.`,
-    );
-  }
-  const out: string[] = [];
-  for (const entry of raw) {
-    if (typeof entry !== "string") {
-      throw new Error(
-        `Invalid config at "${configPath}": stop_commands must contain only strings.`,
-      );
-    }
-    const t = entry.trim();
-    if (t.length > 0) {
-      out.push(t);
-    }
-  }
-  return out;
+  return { configPath, config };
 }
 
 function resolveSlackAllowlist(
@@ -169,9 +176,9 @@ function resolveSlackAllowlist(
   return normalizeStringArray(raw, "slack.allowlist", configPath);
 }
 
-function resolveWhatsAppAllowlist(
-  raw: WhatsAppAllowlistFileValue | undefined,
-  key: "whatsapp.allowlist" | "wwebjs.allowlist",
+function resolveGenericAllowlist(
+  raw: TelegramAllowlistFileValue | WhatsAppAllowlistFileValue | undefined,
+  key: "telegram.allowlist" | "whatsapp.allowlist",
   configPath: string,
 ): IdAllowlist {
   if (raw === undefined || raw === "*") {
@@ -224,7 +231,7 @@ function loadFileConfig(configPath: string): FileConfig | undefined {
   }
 }
 
-function validateConfig(config: AppConfig, configPath: string): void {
+export function validateConfig(config: AppConfig, configPath: string): void {
   if (!config.acp.cmd.trim()) {
     throw new Error(`Invalid config at "${configPath}": acp.cmd is required.`);
   }
@@ -240,27 +247,8 @@ function validateConfig(config: AppConfig, configPath: string): void {
     assertRequired(config.slack.bot_token, "slack.bot_token", configPath);
     assertRequired(config.slack.app_token, "slack.app_token", configPath);
   }
-  if (config.whatsapp.enabled) {
-    assertRequired(
-      config.whatsapp.access_token,
-      "whatsapp.access_token",
-      configPath,
-    );
-    assertRequired(
-      config.whatsapp.phone_number_id,
-      "whatsapp.phone_number_id",
-      configPath,
-    );
-    assertRequired(
-      config.whatsapp.verify_token,
-      "whatsapp.verify_token",
-      configPath,
-    );
-    assertRequired(
-      config.whatsapp.app_secret,
-      "whatsapp.app_secret",
-      configPath,
-    );
+  if (config.telegram.enabled) {
+    assertRequired(config.telegram.bot_token, "telegram.bot_token", configPath);
   }
 }
 

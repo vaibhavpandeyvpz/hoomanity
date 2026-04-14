@@ -6,7 +6,7 @@ import { AcpSessionStore } from "../../src/core/acp-session-store";
 
 describe("AcpSessionStore", () => {
   it("round-trips persisted sessions", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "hooman-acp-store-"));
+    const dir = await mkdtemp(join(tmpdir(), "hoomanity-acp-store-"));
     try {
       const path = join(dir, "sessions.json");
       const store = new AcpSessionStore(path);

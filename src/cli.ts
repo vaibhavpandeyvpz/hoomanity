@@ -1,7 +1,5 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { StdioAgentTransport } from "./core/agent-transport";
 import { ApprovalService } from "./core/approval-service";
 import { AcpSessionStore } from "./core/acp-session-store";
@@ -9,21 +7,17 @@ import { AcpClient } from "./core/acp-client";
 import { CoreOrchestrator } from "./core/orchestrator";
 import { SessionRegistry } from "./core/session-registry";
 import { TurnQueue } from "./core/turn-queue";
-import { SlackListener } from "./listeners/slack/client";
-import { WhatsAppListener } from "./listeners/whatsapp/client";
-import { WhatsAppWwebjsListener } from "./listeners/whatsapp-wwebjs/client";
-import { configureWwebjsSession } from "./listeners/whatsapp-wwebjs/configure";
+import type { RuntimeListener } from "./contracts";
+import { createEnabledListeners } from "./listeners/registry";
+import { runConfigureUi } from "./configure";
 import { loadConfig } from "./config";
 import { log } from "./core/logger";
+import { acpSessionsPath } from "./paths";
 
 type PackageJson = {
   name?: string;
   version?: string;
   description?: string;
-};
-
-type Stoppable = {
-  stop?: () => Promise<void>;
 };
 
 const pkg = (await Bun.file(
@@ -46,10 +40,9 @@ program
 
 program
   .command("configure")
-  .description("Configure a platform listener session")
-  .argument("<platform>", "platform name, e.g. wwebjs")
-  .action(async (platform: string) => {
-    await configurePlatform(platform);
+  .description("Open interactive configuration UI")
+  .action(async () => {
+    await runConfigureUi();
   });
 
 program.action(async () => {
@@ -59,30 +52,30 @@ program.action(async () => {
 await program.parseAsync();
 
 async function startApp(): Promise<void> {
-  log("info", "app", "starting hooman relay");
+  log.info("starting hoomanity relay", { scope: "app" });
   const config = loadConfig();
-  log("info", "app", "config loaded", {
+  log.info("config loaded", {
+    scope: "app",
     acpCwd: config.acp.cwd,
     approvalTimeoutMs: config.approvals.timeout_ms,
-    stopCommandCount: config.stop_commands.length,
     slackAllowlist:
       config.slack.allowlist === "*" ? "*" : config.slack.allowlist.length,
+    telegramAllowlist:
+      config.telegram.allowlist === "*"
+        ? "*"
+        : config.telegram.allowlist.length,
     whatsappAllowlist:
       config.whatsapp.allowlist === "*"
         ? "*"
         : config.whatsapp.allowlist.length,
-    wwebjsAllowlist:
-      config.wwebjs.allowlist === "*" ? "*" : config.wwebjs.allowlist.length,
     slackEnabled: config.slack.enabled,
+    telegramEnabled: config.telegram.enabled,
     whatsappEnabled: config.whatsapp.enabled,
-    wwebjsEnabled: config.wwebjs.enabled,
   });
   const transport = new StdioAgentTransport(config.acp.cmd, config.acp.cwd);
   const approvals = new ApprovalService(config.approvals.timeout_ms);
   const acpClient = new AcpClient(transport, approvals);
-  const sessionStore = new AcpSessionStore(
-    join(homedir(), ".hooman", "acp-sessions.json"),
-  );
+  const sessionStore = new AcpSessionStore(acpSessionsPath);
   const sessions = new SessionRegistry(sessionStore);
   await sessions.hydrateFromDisk();
   const queue = new TurnQueue();
@@ -95,62 +88,32 @@ async function startApp(): Promise<void> {
   );
 
   await acpClient.connect();
-  log("info", "app", "acp client connected");
-  let startedListeners = 0;
-  const listeners: Stoppable[] = [];
-
-  if (
-    config.slack.enabled &&
-    config.slack.app_token &&
-    config.slack.bot_token
-  ) {
-    const slack = new SlackListener({
-      appToken: config.slack.app_token,
-      botToken: config.slack.bot_token,
-      allowlist: config.slack.allowlist,
-      stopCommands: config.stop_commands,
-      orchestrator,
-      approvals,
-      sessions,
-    });
-    await slack.start();
-    listeners.push(slack);
-    startedListeners += 1;
-    log("info", "app", "slack listener started");
+  log.info("acp client connected", { scope: "app" });
+  const listeners: RuntimeListener[] = [];
+  const enabledListeners = createEnabledListeners({
+    config,
+    orchestrator,
+    approvals,
+    sessions,
+  });
+  for (const { name, listener } of enabledListeners) {
+    listeners.push(listener);
+    log.info(`scheduling ${name} listener start`, { scope: "app" });
+    void Promise.resolve()
+      .then(() => listener.start())
+      .then(() => {
+        log.info(`${name} listener started`, { scope: "app" });
+      })
+      .catch((error) => {
+        log.error(`${name} listener failed to start`, {
+          scope: "app",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
   }
 
-  if (config.whatsapp.enabled) {
-    const whatsapp = new WhatsAppListener({
-      config: config.whatsapp,
-      allowlist: config.whatsapp.allowlist,
-      stopCommands: config.stop_commands,
-      orchestrator,
-      approvals,
-      sessions,
-    });
-    await whatsapp.start();
-    listeners.push(whatsapp);
-    startedListeners += 1;
-    log("info", "app", "official whatsapp listener started");
-  }
-
-  if (config.wwebjs.enabled) {
-    const wwebjs = new WhatsAppWwebjsListener({
-      config: config.wwebjs,
-      allowlist: config.wwebjs.allowlist,
-      stopCommands: config.stop_commands,
-      orchestrator,
-      approvals,
-      sessions,
-    });
-    await wwebjs.start();
-    listeners.push(wwebjs);
-    startedListeners += 1;
-    log("info", "app", "wwebjs listener started");
-  }
-
-  if (startedListeners === 0) {
-    log("warn", "app", "no listeners enabled; process will stay idle");
+  if (listeners.length === 0) {
+    log.warn("no listeners enabled; process will stay idle", { scope: "app" });
   }
 
   let shuttingDown = false;
@@ -159,14 +122,15 @@ async function startApp(): Promise<void> {
       return;
     }
     shuttingDown = true;
-    log("info", "app", "received shutdown signal", { signal });
+    log.info("received shutdown signal", { scope: "app", signal });
 
     for (const listener of listeners) {
       if (!listener.stop) continue;
       try {
         await listener.stop();
       } catch (error) {
-        log("warn", "app", "listener stop failed", {
+        log.warn("listener stop failed", {
+          scope: "app",
           signal,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -176,11 +140,12 @@ async function startApp(): Promise<void> {
     try {
       await acpClient.close();
     } catch (error) {
-      log("warn", "app", "ACP close failed during shutdown", {
+      log.warn("ACP close failed during shutdown", {
+        scope: "app",
         error: error instanceof Error ? error.message : String(error),
       });
     }
-    log("info", "app", "shutdown complete");
+    log.info("shutdown complete", { scope: "app" });
     process.exit(0);
   };
 
@@ -190,20 +155,4 @@ async function startApp(): Promise<void> {
   process.once("SIGTERM", () => {
     void shutdown("SIGTERM");
   });
-}
-
-async function configurePlatform(platform: string): Promise<void> {
-  const normalized = platform.trim().toLowerCase();
-  const config = loadConfig();
-
-  if (normalized === "wwebjs" || normalized === "whatsapp-wwebjs") {
-    log("info", "configure", "starting wwebjs configuration flow");
-    await configureWwebjsSession(config.wwebjs);
-    log("info", "configure", "wwebjs configuration completed");
-    return;
-  }
-
-  throw new Error(
-    `Unsupported platform "${platform}". Currently supported: wwebjs`,
-  );
 }

@@ -1,141 +1,109 @@
-import type { StoredAttachment, PlatformPrompt } from "../../core/types";
+import { mkdir, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { join } from "node:path";
+import type { PlatformPrompt } from "../../contracts";
+import { attachmentsDir } from "../../paths";
 
-export type WhatsAppWebhookMessage = {
+export type WhatsAppMessage = {
+  id?: { _serialized?: string };
   from?: string;
-  id?: string;
-  timestamp?: string;
+  body?: string;
   type?: string;
-  text?: { body?: string };
-  image?: { id?: string; caption?: string; mime_type?: string };
-  document?: {
-    id?: string;
-    caption?: string;
-    filename?: string;
-    mime_type?: string;
-  };
-  audio?: { id?: string; mime_type?: string };
-  video?: { id?: string; caption?: string; mime_type?: string };
-  interactive?: {
-    type?: string;
-    button_reply?: { id?: string; title?: string };
-  };
+  hasMedia?: boolean;
+  fromMe?: boolean;
+  author?: string;
+  timestamp?: number;
+  getQuotedMessage?: () => Promise<WhatsAppMessage>;
+  hasQuotedMsg?: boolean;
+  downloadMedia?: () => Promise<
+    { data?: string; mimetype?: string; filename?: string } | undefined
+  >;
 };
 
-export type WhatsAppInteractiveApproval = {
-  requestId: string;
-  optionId?: string;
-  action: "select" | "cancel";
-};
+function attachmentsRoot(): string {
+  return attachmentsDir;
+}
+
+function sanitizeFilename(name: string): string {
+  return name.replace(/[/\\]/g, "_").slice(0, 200) || "file";
+}
+
+async function saveAttachmentFromMessage(message: WhatsAppMessage) {
+  if (!message.hasMedia || !message.downloadMedia) return undefined;
+  const media = await message.downloadMedia();
+  if (!media?.data) return undefined;
+  const mimeType = (media.mimetype ?? "application/octet-stream").toLowerCase();
+  const originalName = sanitizeFilename(
+    media.filename ?? `attachment-${Date.now()}`,
+  );
+  const buffer = Buffer.from(media.data, "base64");
+  const root = attachmentsRoot();
+  await mkdir(root, { recursive: true });
+  const localPath = join(root, `${randomUUID()}-${originalName}`);
+  await writeFile(localPath, buffer);
+  return {
+    localPath,
+    originalName,
+    mimeType,
+  };
+}
 
 export function toWhatsAppConversationKey(chatId: string): string {
   return `whatsapp:${chatId}`;
 }
 
-export function parseInteractiveApprovalCallback(
-  message: WhatsAppWebhookMessage,
-): WhatsAppInteractiveApproval | undefined {
-  const replyId = message.interactive?.button_reply?.id;
-  if (!replyId) return undefined;
-  try {
-    const decoded = JSON.parse(replyId) as {
-      requestId?: string;
-      optionId?: string;
-      action?: string;
-    };
-    if (!decoded.requestId) return undefined;
-    if (decoded.action === "cancel") {
-      return { requestId: decoded.requestId, action: "cancel" };
-    }
-    return {
-      requestId: decoded.requestId,
-      optionId: decoded.optionId,
-      action: "select",
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-export function extractWhatsAppText(message: WhatsAppWebhookMessage): string {
-  if (message.text?.body?.trim()) return message.text.body.trim();
-  if (message.image?.caption?.trim()) return message.image.caption.trim();
-  if (message.document?.caption?.trim()) return message.document.caption.trim();
-  if (message.video?.caption?.trim()) return message.video.caption.trim();
-  return "";
-}
-
-export function mediaRefsFromWebhook(
-  message: WhatsAppWebhookMessage,
-): Array<{ mediaId: string; mimeType: string; originalName: string }> {
-  const out: Array<{
-    mediaId: string;
-    mimeType: string;
-    originalName: string;
-  }> = [];
-  if (message.image?.id) {
-    out.push({
-      mediaId: message.image.id,
-      mimeType: message.image.mime_type ?? "image/jpeg",
-      originalName: `image-${message.id ?? Date.now()}.jpg`,
-    });
-  }
-  if (message.document?.id) {
-    out.push({
-      mediaId: message.document.id,
-      mimeType: message.document.mime_type ?? "application/octet-stream",
-      originalName:
-        message.document.filename ?? `document-${message.id ?? Date.now()}`,
-    });
-  }
-  if (message.video?.id) {
-    out.push({
-      mediaId: message.video.id,
-      mimeType: message.video.mime_type ?? "video/mp4",
-      originalName: `video-${message.id ?? Date.now()}.mp4`,
-    });
-  }
-  if (message.audio?.id) {
-    out.push({
-      mediaId: message.audio.id,
-      mimeType: message.audio.mime_type ?? "audio/ogg",
-      originalName: `audio-${message.id ?? Date.now()}.ogg`,
-    });
-  }
-  return out;
-}
-
-export function buildWhatsAppPlatformPrompt(
-  message: WhatsAppWebhookMessage,
-  attachments: StoredAttachment[],
-): PlatformPrompt | undefined {
+export async function buildWhatsAppPlatformPrompt(
+  message: WhatsAppMessage,
+): Promise<PlatformPrompt | undefined> {
   const chatId = message.from?.trim();
-  if (!chatId) return undefined;
-  const text = extractWhatsAppText(message);
-  if (!text && attachments.length === 0) return undefined;
+  if (!chatId || message.fromMe) return undefined;
+
+  const text = (message.body ?? "").trim();
+  const attachment = await saveAttachmentFromMessage(message);
+  const hasContent = text.length > 0 || Boolean(attachment);
+  if (!hasContent) return undefined;
+
+  let quoted: Record<string, unknown> | undefined;
+  if (message.hasQuotedMsg && message.getQuotedMessage) {
+    try {
+      const parent = await message.getQuotedMessage();
+      quoted = {
+        id: parent.id?._serialized,
+        from: parent.from,
+        text: parent.body ?? "",
+        type: parent.type,
+      };
+    } catch {
+      quoted = undefined;
+    }
+  }
 
   return {
     platform: "whatsapp",
     conversationKey: toWhatsAppConversationKey(chatId),
     text: text || "User sent media.",
     metadata: {
-      source: "whatsapp_cloud_api",
+      source: "whatsapp_web",
       channelMeta: {
         channel: "whatsapp",
         message: {
-          id: message.id,
+          id: message.id?._serialized,
           chat: { id: chatId },
-          sender: { id: chatId, name: chatId },
+          sender: {
+            id: message.author ?? message.from,
+            name: message.author ?? message.from,
+          },
           text: text || "",
           type: message.type,
+          parent: quoted ?? null,
         },
       },
-      rawEvent: message,
     },
     replyTarget: {
       platform: "whatsapp",
       channelId: chatId,
     },
     receivedAt: Date.now(),
-    attachments: attachments.length > 0 ? attachments : undefined,
+    attachments: attachment ? [attachment] : undefined,
   };
 }

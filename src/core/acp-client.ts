@@ -13,7 +13,7 @@ import {
 import { readFile } from "node:fs/promises";
 import type { AgentTransport, TransportConnection } from "./agent-transport";
 import type { ApprovalService } from "./approval-service";
-import type { CoreEvent, StoredAttachment } from "./types";
+import type { CoreEvent, StoredAttachment } from "../contracts";
 import { log } from "./logger";
 
 const IMAGE_MIME_TYPES = new Set([
@@ -39,7 +39,7 @@ export class AcpClient {
   ) {}
 
   async connect(): Promise<void> {
-    log("info", "acp", "opening transport");
+    log.info("opening transport", { scope: "acp" });
     this.transportConnection = await this.transport.open();
 
     this.connection = new ClientSideConnection(
@@ -51,14 +51,15 @@ export class AcpClient {
       protocolVersion: PROTOCOL_VERSION,
       clientCapabilities: {},
     });
-    log("info", "acp", "initialized protocol", {
+    log.info("initialized protocol", {
+      scope: "acp",
       protocolVersion: this.init.protocolVersion,
     });
   }
 
   async close(): Promise<void> {
     if (this.transportConnection) {
-      log("info", "acp", "closing transport");
+      log.info("closing transport", { scope: "acp" });
       await this.transportConnection.close();
       this.transportConnection = undefined;
     }
@@ -74,7 +75,8 @@ export class AcpClient {
 
   async newSession(cwd: string, mcpServers: McpServer[] = []): Promise<string> {
     const connection = this.requireConnection();
-    log("info", "acp", "creating new session", {
+    log.info("creating new session", {
+      scope: "acp",
       cwd,
       mcpServers: mcpServers.length,
     });
@@ -82,7 +84,10 @@ export class AcpClient {
       cwd,
       mcpServers,
     });
-    log("info", "acp", "session created", { sessionId: response.sessionId });
+    log.info("session created", {
+      scope: "acp",
+      sessionId: response.sessionId,
+    });
     this.promptReadySessions.add(response.sessionId);
     return response.sessionId;
   }
@@ -103,26 +108,24 @@ export class AcpClient {
     }
     const connection = this.requireConnection();
     if (this.supportsLoadSession()) {
-      log("info", "acp", "loading persisted session", { sessionId });
+      log.info("loading persisted session", { scope: "acp", sessionId });
       await connection.loadSession({
         sessionId,
         cwd,
         mcpServers: [],
       });
     } else {
-      log(
-        "info",
-        "acp",
-        "reusing persisted session id without loadSession capability",
-        { sessionId },
-      );
+      log.info("reusing persisted session id without loadSession capability", {
+        scope: "acp",
+        sessionId,
+      });
     }
     this.promptReadySessions.add(sessionId);
   }
 
   async cancelSessionTurn(sessionId: string): Promise<void> {
     const connection = this.requireConnection();
-    log("info", "acp", "sending session cancel", { sessionId });
+    log.info("sending session cancel", { scope: "acp", sessionId });
     await connection.cancel({ sessionId });
   }
 
@@ -133,7 +136,8 @@ export class AcpClient {
     attachments?: StoredAttachment[];
   }): Promise<PromptResponse> {
     const connection = this.requireConnection();
-    log("debug", "acp", "sending prompt", {
+    log.debug("sending prompt", {
+      scope: "acp",
       sessionId: input.sessionId,
       textLength: input.text.length,
       hasMetadata: Boolean(input.metadataJson),
@@ -145,7 +149,8 @@ export class AcpClient {
       sessionId: input.sessionId,
       prompt,
     });
-    log("info", "acp", "prompt completed", {
+    log.info("prompt completed", {
+      scope: "acp",
       sessionId: input.sessionId,
       stopReason: response.stopReason,
     });
@@ -192,7 +197,8 @@ export class AcpClient {
             });
           }
         } catch (e) {
-          log("warn", "acp", "failed to read image attachment", {
+          log.warn("failed to read image attachment", {
+            scope: "acp",
             path: att.localPath,
             error: e instanceof Error ? e.message : String(e),
           });
@@ -200,11 +206,10 @@ export class AcpClient {
         }
       } else {
         if (isImage && !agentSupportsImage) {
-          log(
-            "warn",
-            "acp",
+          log.warn(
             "agent does not advertise image prompts; sending image path as text only",
             {
+              scope: "acp",
               path: att.localPath,
             },
           );
@@ -240,7 +245,8 @@ export class AcpClient {
   };
 
   private async handleRequestPermission(params: RequestPermissionRequest) {
-    log("info", "acp", "permission requested", {
+    log.info("permission requested", {
+      scope: "acp",
       sessionId: params.sessionId,
       toolCallId: params.toolCall.toolCallId,
       title: params.toolCall.title,
@@ -251,7 +257,8 @@ export class AcpClient {
       options: params.options,
       toolCall: params.toolCall,
     });
-    log("info", "acp", "permission resolved", {
+    log.info("permission resolved", {
+      scope: "acp",
       sessionId: params.sessionId,
       toolCallId: params.toolCall.toolCallId,
       outcome: outcome.outcome,

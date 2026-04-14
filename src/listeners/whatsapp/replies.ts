@@ -2,16 +2,19 @@ import type {
   ApprovalRequest,
   PlatformReplyTarget,
   TurnResult,
-} from "../../core/types";
+} from "../../contracts";
+import type { IFormatter } from "../../core/formatter";
 import { toUserFacingErrorMessage } from "../../core/user-facing-error";
 
-type WhatsAppApiConfig = {
-  access_token: string;
-  phone_number_id: string;
+type WhatsAppClient = {
+  sendMessage: (chatId: string, text: string) => Promise<unknown>;
 };
 
 export class WhatsAppReplies {
-  constructor(private readonly config: WhatsAppApiConfig) {}
+  constructor(
+    private readonly client: WhatsAppClient,
+    private readonly formatter: IFormatter,
+  ) {}
 
   async postFinal(
     target: PlatformReplyTarget,
@@ -37,75 +40,23 @@ export class WhatsAppReplies {
     target: PlatformReplyTarget,
     request: ApprovalRequest,
   ): Promise<void> {
-    const buttons = request.options.slice(0, 3).map((option) => ({
-      type: "reply",
-      reply: {
-        id: JSON.stringify({
-          requestId: request.requestId,
-          optionId: option.optionId,
-          action: "select",
-        }),
-        title: truncate(option.name, 20),
-      },
-    }));
-    if (buttons.length === 0) {
-      await this.sendText(
-        target.channelId,
-        "Approval required but no options were provided.",
-      );
-      return;
-    }
-
-    await this.sendPayload({
-      messaging_product: "whatsapp",
-      to: target.channelId,
-      type: "interactive",
-      interactive: {
-        type: "button",
-        body: {
-          text: truncate(
-            `Tool approval required: ${request.toolCall.title ?? "tool call"}`,
-            1024,
-          ),
-        },
-        action: { buttons },
-      },
-    });
-
-    await this.sendText(
-      target.channelId,
-      'Reply "cancel" to reject this request.',
-    );
+    const text = [
+      `Tool approval required: ${request.toolCall.title ?? "tool call"}`,
+      "",
+      "Reply with:",
+      "- yes / y to allow once",
+      "- always to allow every time",
+      "- no / n to reject",
+    ].join("\n");
+    await this.sendText(target.channelId, text);
   }
 
-  async sendText(chatId: string, text: string): Promise<void> {
-    await this.sendPayload({
-      messaging_product: "whatsapp",
-      to: chatId,
-      type: "text",
-      text: { body: truncate(text, 4096) },
-    });
-  }
-
-  private async sendPayload(payload: Record<string, unknown>): Promise<void> {
-    const url = `https://graph.facebook.com/v20.0/${this.config.phone_number_id}/messages`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.config.access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      throw new Error(`WhatsApp API error ${res.status}: ${await res.text()}`);
+  private async sendText(chatId: string, text: string): Promise<void> {
+    const chunks = this.formatter.format(text);
+    for (const chunk of chunks) {
+      await this.client.sendMessage(chatId, chunk);
     }
   }
-}
-
-function truncate(text: string, max: number): string {
-  if (text.length <= max) return text;
-  return `${text.slice(0, Math.max(0, max - 1))}…`;
 }
 
 function toMessage(error: unknown): string {

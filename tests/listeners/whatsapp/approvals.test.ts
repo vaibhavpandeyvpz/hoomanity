@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   parseApprovalReplyText,
   resolveApprovalFromText,
-} from "../../../src/listeners/whatsapp-wwebjs/approvals";
+} from "../../../src/listeners/whatsapp/approvals";
 
 describe("parseApprovalReplyText", () => {
   it("maps yes/no/always variants", () => {

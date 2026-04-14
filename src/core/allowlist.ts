@@ -1,4 +1,6 @@
-export type IdAllowlist = "*" | string[];
+import type { IdAllowlist } from "../contracts";
+
+export type { IdAllowlist };
 
 export function isAllowedByAllowlist(
   id: string,

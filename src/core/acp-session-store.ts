@@ -1,12 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { ConversationKey } from "./types";
+import type { ConversationKey, PersistedSessionRecord } from "../contracts";
 
-export type PersistedAcpSession = {
-  sessionId: string;
-  cwd: string;
-  updatedAt: number;
-};
+export type PersistedAcpSession = PersistedSessionRecord;
 
 type StoreFileV1 = {
   v: 1;

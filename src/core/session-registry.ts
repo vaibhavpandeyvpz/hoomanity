@@ -1,5 +1,9 @@
-import type { ConversationKey, PlatformReplyTarget } from "./types";
-import type { AcpSessionStore, PersistedAcpSession } from "./acp-session-store";
+import type {
+  ConversationKey,
+  PersistedSessionRecord,
+  PlatformReplyTarget,
+  SessionStore,
+} from "../contracts";
 
 export type SessionBinding = {
   conversationKey: ConversationKey;
@@ -16,10 +20,10 @@ export class SessionRegistry {
   /** Restored from disk before any live message (no reply target yet). */
   private readonly persistedOnly = new Map<
     ConversationKey,
-    PersistedAcpSession
+    PersistedSessionRecord
   >();
 
-  constructor(private readonly store?: AcpSessionStore) {}
+  constructor(private readonly store?: SessionStore) {}
 
   /**
    * Load persisted session ids from disk into memory (no reply targets).
@@ -46,7 +50,7 @@ export class SessionRegistry {
   /** Session id from a prior run, if any, when there is no in-memory binding yet. */
   getPersisted(
     conversationKey: ConversationKey,
-  ): PersistedAcpSession | undefined {
+  ): PersistedSessionRecord | undefined {
     const mem = this.byConversation.get(conversationKey);
     if (mem) {
       return {
