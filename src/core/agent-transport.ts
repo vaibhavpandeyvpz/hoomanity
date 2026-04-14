@@ -30,10 +30,12 @@ export class StdioAgentTransport implements AgentTransport {
       cwd: this.cwd,
       command: this.command,
     });
-    const child = spawn("sh", ["-lc", this.command], {
+    const child = spawn(this.command, {
       cwd: this.cwd,
       stdio: ["pipe", "pipe", "inherit"],
       env: process.env,
+      shell: true,
+      windowsHide: true,
     });
 
     this.child = child;
