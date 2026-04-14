@@ -108,6 +108,15 @@ export class ApprovalService {
     }
   }
 
+  hasPendingForSession(sessionId: string): boolean {
+    for (const pending of this.pending.values()) {
+      if (pending.sessionId === sessionId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private finish(
     requestId: string,
     outcome: RequestPermissionOutcome,

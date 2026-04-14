@@ -5,8 +5,8 @@ export type { UserControlCommand };
  * Parses built-in chat control commands.
  *
  * Built-ins:
- * - `/reset` starts a fresh session for the same conversation
- * - `/stop` and `/cancel` cancel in-flight work
+ * - `reset chat` and `new chat` start a fresh session for the same conversation
+ * - `stop` and `cancel` cancel in-flight work
  *
  */
 export function parseUserControlCommand(
@@ -16,10 +16,10 @@ export function parseUserControlCommand(
   if (!normalized) {
     return undefined;
   }
-  if (normalized === "/reset") {
+  if (normalized === "reset chat" || normalized === "new chat") {
     return "reset";
   }
-  if (normalized === "/stop" || normalized === "/cancel") {
+  if (normalized === "stop" || normalized === "cancel") {
     return "cancel";
   }
   return undefined;

@@ -33,8 +33,15 @@ export class CoreOrchestrator {
       return { cancelled: false };
     }
     const { sessionId } = persisted;
+    const hasActiveTurn = this.turnQueue.hasActive(conversationKey);
+    const hasPendingApproval = this.approvals.hasPendingForSession(sessionId);
+    if (!hasActiveTurn && !hasPendingApproval) {
+      return { cancelled: false };
+    }
     try {
-      await this.acpClient.cancelSessionTurn(sessionId);
+      if (hasActiveTurn) {
+        await this.acpClient.cancelSessionTurn(sessionId);
+      }
     } catch (error) {
       log.warn("session cancel failed", {
         scope: "orchestrator",
@@ -43,7 +50,9 @@ export class CoreOrchestrator {
         error: error instanceof Error ? error.message : String(error),
       });
     }
-    this.approvals.cancelForSession(sessionId);
+    if (hasPendingApproval) {
+      this.approvals.cancelForSession(sessionId);
+    }
     return { cancelled: true };
   }
 

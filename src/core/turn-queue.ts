@@ -6,7 +6,7 @@ type QueueJob<T> = {
   reject: (reason?: unknown) => void;
 };
 
-/** Rejected for jobs still in the per-conversation queue when `/reset` clears them. */
+/** Rejected for jobs still in the per-conversation queue when a reset clears them. */
 export class TurnQueueDroppedError extends Error {
   constructor(readonly conversationKey: ConversationKey) {
     super("Turn dropped: conversation was reset.");
@@ -23,6 +23,10 @@ export function isTurnQueueDroppedError(
 export class TurnQueue {
   private readonly queues = new Map<ConversationKey, QueueJob<unknown>[]>();
   private readonly active = new Set<ConversationKey>();
+
+  hasActive(conversationKey: ConversationKey): boolean {
+    return this.active.has(conversationKey);
+  }
 
   /**
    * Reject queued (not yet running) jobs for this conversation. Safe while a turn is in flight:

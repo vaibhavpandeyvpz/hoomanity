@@ -77,8 +77,8 @@ npx hoomanity start
 
 Built-in chat controls:
 
-- `/cancel` or `/stop`: cancel in-flight work for the current conversation
-- `/reset`: start a fresh session for the current conversation
+- `cancel` or `stop`: cancel in-flight work for the current conversation
+- `reset chat` or `new chat`: start a fresh session for the current conversation
 
 ## Configuration
 
