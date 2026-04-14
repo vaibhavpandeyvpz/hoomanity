@@ -1,4 +1,20 @@
-# Hoomanity
+<div align="center">
+  <h1>Hoomanity</h1>
+  <p>
+    Hoomanity is a Bun-powered ACP relay that lets you use your existing coding agents, or run your own local agents, from Slack, Telegram, and WhatsApp with persistent sessions and tool approvals.
+  </p>
+  <p>
+    <a href="https://bun.com"><img src="https://img.shields.io/badge/runtime-Bun-f9f1e1?logo=bun&logoColor=000000" alt="Bun" /></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/language-TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript" /></a>
+    <a href="https://github.com/vadimdemedes/ink"><img src="https://img.shields.io/badge/ui-Ink-6f42c1" alt="Ink" /></a>
+    <a href="https://github.com/vaibhavpandeyvpz/hoomanity/actions/workflows/build-publish.yml"><img src="https://img.shields.io/github/actions/workflow/status/vaibhavpandeyvpz/hoomanity/build-publish.yml?branch=main&label=build" alt="Build" /></a>
+    <a href="https://github.com/vaibhavpandeyvpz/hoomanity/stargazers"><img src="https://img.shields.io/github/stars/vaibhavpandeyvpz/hoomanity?style=flat" alt="GitHub Repo stars" /></a>
+    <a href="https://github.com/vaibhavpandeyvpz/hoomanity/commits/main"><img src="https://img.shields.io/github/last-commit/vaibhavpandeyvpz/hoomanity" alt="GitHub last commit" /></a>
+  </p>
+  <p>
+    <img src=".github/screenshot.png" alt="Hoomanity screenshot" />
+  </p>
+</div>
 
 Hoomanity brings your coding agents into the chat apps your team already uses. Connect an ACP-compatible agent you already run, or spin up a local one, then talk to it from Slack, Telegram, or WhatsApp with persistent sessions, tool approvals, and a polished terminal configuration UI.
 
