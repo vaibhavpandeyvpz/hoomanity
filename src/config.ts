@@ -16,11 +16,13 @@ export type AppConfig = {
     enabled: boolean;
     bot_token?: string;
     app_token?: string;
+    require_mention: boolean;
     allowlist: IdAllowlist;
   };
   telegram: {
     enabled: boolean;
     bot_token?: string;
+    require_mention: boolean;
     allowlist: IdAllowlist;
   };
   whatsapp: {
@@ -28,6 +30,7 @@ export type AppConfig = {
     session_path?: string;
     client_id?: string;
     puppeteer_executable_path?: string;
+    require_mention: boolean;
     allowlist: IdAllowlist;
   };
 };
@@ -80,11 +83,13 @@ export async function writeEditableConfig(
       enabled: config.slack.enabled,
       bot_token: config.slack.bot_token,
       app_token: config.slack.app_token,
+      require_mention: config.slack.require_mention,
       allowlist: config.slack.allowlist,
     },
     telegram: {
       enabled: config.telegram.enabled,
       bot_token: config.telegram.bot_token,
+      require_mention: config.telegram.require_mention,
       allowlist: config.telegram.allowlist,
     },
     whatsapp: {
@@ -92,6 +97,7 @@ export async function writeEditableConfig(
       session_path: config.whatsapp.session_path,
       client_id: config.whatsapp.client_id,
       puppeteer_executable_path: config.whatsapp.puppeteer_executable_path,
+      require_mention: config.whatsapp.require_mention,
       allowlist: config.whatsapp.allowlist,
     },
   };
@@ -126,12 +132,20 @@ function resolveConfig(env: NodeJS.ProcessEnv): {
       enabled: parseBool(env.SLACK_ENABLED) ?? fromFile.slack?.enabled ?? false,
       bot_token: env.SLACK_BOT_TOKEN ?? fromFile.slack?.bot_token,
       app_token: env.SLACK_APP_TOKEN ?? fromFile.slack?.app_token,
+      require_mention:
+        parseBool(env.SLACK_REQUIRE_MENTION) ??
+        fromFile.slack?.require_mention ??
+        false,
       allowlist: resolveSlackAllowlist(fromFile, configPath),
     },
     telegram: {
       enabled:
         parseBool(env.TELEGRAM_ENABLED) ?? fromFile.telegram?.enabled ?? false,
       bot_token: env.TELEGRAM_BOT_TOKEN ?? fromFile.telegram?.bot_token,
+      require_mention:
+        parseBool(env.TELEGRAM_REQUIRE_MENTION) ??
+        fromFile.telegram?.require_mention ??
+        false,
       allowlist: resolveGenericAllowlist(
         fromFile.telegram?.allowlist,
         "telegram.allowlist",
@@ -150,6 +164,10 @@ function resolveConfig(env: NodeJS.ProcessEnv): {
       puppeteer_executable_path:
         env.WHATSAPP_PUPPETEER_EXECUTABLE_PATH ??
         fromFile.whatsapp?.puppeteer_executable_path,
+      require_mention:
+        parseBool(env.WHATSAPP_REQUIRE_MENTION) ??
+        fromFile.whatsapp?.require_mention ??
+        false,
       allowlist: resolveGenericAllowlist(
         fromFile.whatsapp?.allowlist,
         "whatsapp.allowlist",

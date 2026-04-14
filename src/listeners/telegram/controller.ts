@@ -24,6 +24,10 @@ import {
   type TelegramInboundMessage,
 } from "./build-prompt";
 import { TelegramReplies } from "./replies";
+import {
+  telegramChatIsPrivate,
+  telegramMessageMentionsBot,
+} from "./mention-guard";
 
 export type TelegramCallbackQuery = {
   data?: string;
@@ -34,6 +38,8 @@ export type TelegramCallbackQuery = {
 
 export class TelegramMessageController {
   private readonly actions: TelegramActions;
+  private botId: number | undefined;
+  private botUsername: string | undefined;
   private readonly pendingByChatId = new Map<string, string>();
   private readonly chatByRequestId = new Map<string, string>();
   private readonly approvalOptionsByRequestId = new Map<
@@ -43,6 +49,7 @@ export class TelegramMessageController {
 
   constructor(
     private readonly allowlist: IdAllowlist,
+    private readonly requireMention: boolean,
     private readonly orchestrator: CoreOrchestrator,
     private readonly replies: () => TelegramReplies | undefined,
     private readonly telegram: () => Telegram | undefined,
@@ -70,6 +77,11 @@ export class TelegramMessageController {
       });
       await this.replies()?.postApproval(binding.replyTarget, request);
     });
+  }
+
+  setBotIdentity(identity: { id: number; username?: string }): void {
+    this.botId = identity.id;
+    this.botUsername = identity.username?.trim() || undefined;
   }
 
   clearState(): void {
@@ -138,8 +150,27 @@ export class TelegramMessageController {
       }
     }
 
+    if (
+      this.requireMention &&
+      !telegramChatIsPrivate(message) &&
+      this.botId != null &&
+      !telegramMessageMentionsBot(message, this.botId, this.botUsername)
+    ) {
+      log.info("ignoring message without bot mention", {
+        scope: "telegram",
+        chatId: target.channelId,
+      });
+      return;
+    }
+
     const attachments = await this.downloadMessageAttachments(message);
-    const prompt = buildTelegramPlatformPrompt(message, attachments);
+    const prompt = buildTelegramPlatformPrompt(
+      message,
+      attachments,
+      this.botId != null
+        ? { id: this.botId, username: this.botUsername }
+        : undefined,
+    );
     if (!prompt) {
       return;
     }

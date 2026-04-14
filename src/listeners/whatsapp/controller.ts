@@ -14,11 +14,16 @@ import {
   type WhatsAppMessage,
 } from "./build-prompt";
 import { WhatsAppReplies } from "./replies";
+import {
+  whatsappMessageChatNeedsMention,
+  whatsappMessageMentionsAnyWid,
+} from "./mention-guard";
 
 export type WhatsAppRuntimeConfig = {
   session_path?: string;
   client_id?: string;
   puppeteer_executable_path?: string;
+  require_mention?: boolean;
 };
 
 type WhatsAppClient = {
@@ -27,9 +32,11 @@ type WhatsAppClient = {
 
 export class WhatsAppMessageController {
   private readonly pendingByChatId = new Map<string, WhatsAppPendingApproval>();
+  private botWids: string[] = [];
 
   constructor(
     private readonly allowlist: IdAllowlist,
+    private readonly requireMention: boolean,
     private readonly orchestrator: CoreOrchestrator,
     private readonly approvals: ApprovalService,
     private readonly replies: () => WhatsAppReplies | undefined,
@@ -51,6 +58,10 @@ export class WhatsAppMessageController {
       });
       await this.replies()?.postApproval(binding.replyTarget, request);
     });
+  }
+
+  setBotWids(wids: string[]): void {
+    this.botWids = wids.map((w) => w.trim()).filter(Boolean);
   }
 
   clearState(): void {
@@ -129,7 +140,22 @@ export class WhatsAppMessageController {
       }
     }
 
-    const prompt = await buildWhatsAppPlatformPrompt(message);
+    const chatNeedsMention =
+      this.requireMention &&
+      this.botWids.length > 0 &&
+      (await whatsappMessageChatNeedsMention(message));
+    if (
+      chatNeedsMention &&
+      !whatsappMessageMentionsAnyWid(message.mentionedIds, this.botWids)
+    ) {
+      log.info("ignoring message without bot mention", {
+        scope: "whatsapp",
+        chatId,
+      });
+      return;
+    }
+
+    const prompt = await buildWhatsAppPlatformPrompt(message, this.botWids);
     if (!prompt || !this.replies()) return;
 
     await setWhatsAppProcessingReaction(message, "add");

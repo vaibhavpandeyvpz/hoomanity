@@ -18,6 +18,9 @@ describe("loadConfig", () => {
     expect(config.slack.allowlist).toBe("*");
     expect(config.telegram.allowlist).toBe("*");
     expect(config.whatsapp.allowlist).toBe("*");
+    expect(config.slack.require_mention).toBe(false);
+    expect(config.telegram.require_mention).toBe(false);
+    expect(config.whatsapp.require_mention).toBe(false);
   });
 
   it("normalizes listener allowlists from config file", async () => {

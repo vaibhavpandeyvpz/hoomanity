@@ -67,6 +67,19 @@ export function buildTabFields(input: BuildFieldsInput): FieldItem[] {
           })),
         "* or Slack channel IDs, comma-separated",
       ),
+      fieldBoolean(
+        "slack.require_mention",
+        "Require mention",
+        draft.slack.require_mention,
+        () =>
+          update((cfg) => ({
+            ...cfg,
+            slack: {
+              ...cfg.slack,
+              require_mention: !cfg.slack.require_mention,
+            },
+          })),
+      ),
     ];
   }
 
@@ -127,6 +140,19 @@ export function buildTabFields(input: BuildFieldsInput): FieldItem[] {
             whatsapp: { ...cfg.whatsapp, allowlist: value },
           })),
         "* or WhatsApp chat IDs, comma-separated",
+      ),
+      fieldBoolean(
+        "whatsapp.require_mention",
+        "Require mention",
+        draft.whatsapp.require_mention,
+        () =>
+          update((cfg) => ({
+            ...cfg,
+            whatsapp: {
+              ...cfg.whatsapp,
+              require_mention: !cfg.whatsapp.require_mention,
+            },
+          })),
       ),
       {
         id: "whatsapp.auth_action",
@@ -201,6 +227,19 @@ export function buildTabFields(input: BuildFieldsInput): FieldItem[] {
             telegram: { ...cfg.telegram, allowlist: value },
           })),
         "* or Telegram chat IDs, comma-separated",
+      ),
+      fieldBoolean(
+        "telegram.require_mention",
+        "Require mention",
+        draft.telegram.require_mention,
+        () =>
+          update((cfg) => ({
+            ...cfg,
+            telegram: {
+              ...cfg.telegram,
+              require_mention: !cfg.telegram.require_mention,
+            },
+          })),
       ),
     ];
   }

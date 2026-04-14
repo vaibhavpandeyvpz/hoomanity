@@ -6,6 +6,7 @@ import { log } from "../../core/logger";
 import { parseUserControlCommand } from "../../core/stop-command";
 import { SlackActions } from "./actions";
 import { buildSlackPlatformPrompt } from "./build-prompt";
+import { slackEventsApiShouldIgnoreMissingMention } from "./mention-guard";
 import { SlackReplies } from "./replies";
 
 export type SlackSocketEvent = {
@@ -15,14 +16,25 @@ export type SlackSocketEvent = {
 };
 
 export class SlackMessageController {
+  private botUserId: string | undefined;
+  private readonly conversationByChannelId = new Map<
+    string,
+    { is_im?: boolean }
+  >();
+
   constructor(
     private readonly webClient: WebClient,
     private readonly botToken: string,
     private readonly allowlist: IdAllowlist,
+    private readonly requireMention: boolean,
     private readonly replies: SlackReplies,
     private readonly actions: SlackActions,
     private readonly orchestrator: CoreOrchestrator,
   ) {}
+
+  setBotUserId(userId: string): void {
+    this.botUserId = userId.trim() || undefined;
+  }
 
   async handleSlackEvent(event: SlackSocketEvent): Promise<void> {
     if (event.ack) {
@@ -51,10 +63,26 @@ export class SlackMessageController {
       return;
     }
 
+    if (
+      await slackEventsApiShouldIgnoreMissingMention(event.body, {
+        requireMention: this.requireMention,
+        botUserId: this.botUserId,
+        resolveConversation: async (channelId) =>
+          await this.resolveConversation(channelId),
+      })
+    ) {
+      log.info("ignoring message without bot mention", {
+        scope: "slack",
+        channelId: slackChannelId,
+      });
+      return;
+    }
+
     const prompt = await buildSlackPlatformPrompt(
       event.body,
       this.webClient,
       this.botToken,
+      this.botUserId,
     );
     if (!prompt) {
       return;
@@ -152,6 +180,32 @@ export class SlackMessageController {
           });
         }
       }
+    }
+  }
+
+  private async resolveConversation(
+    channelId: string,
+  ): Promise<{ is_im?: boolean } | undefined> {
+    const cached = this.conversationByChannelId.get(channelId);
+    if (cached) {
+      return cached;
+    }
+    try {
+      const response = (await this.webClient.conversations.info({
+        channel: channelId,
+      })) as { channel?: { is_im?: boolean } };
+      const channel = response.channel;
+      if (channel) {
+        this.conversationByChannelId.set(channelId, channel);
+      }
+      return channel;
+    } catch (error) {
+      log.warn("failed to resolve slack conversation for mention gate", {
+        scope: "slack",
+        channelId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return undefined;
     }
   }
 }

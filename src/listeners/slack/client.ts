@@ -15,6 +15,7 @@ export class SlackListener {
   private readonly webClient: WebClient;
   private readonly botToken: string;
   private readonly allowlist: IdAllowlist;
+  private readonly requireMention: boolean;
   private readonly replies: SlackReplies;
   private readonly actions: SlackActions;
   private readonly controller: SlackMessageController;
@@ -23,11 +24,13 @@ export class SlackListener {
     botToken: string;
     appToken: string;
     allowlist: IdAllowlist;
+    requireMention: boolean;
     orchestrator: CoreOrchestrator;
     approvals: ApprovalService;
     sessions: SessionRegistry;
   }) {
     this.allowlist = input.allowlist;
+    this.requireMention = input.requireMention;
     this.botToken = input.botToken;
     this.webClient = new WebClient(input.botToken);
     this.socketClient = new SocketModeClient({
@@ -39,6 +42,7 @@ export class SlackListener {
       this.webClient,
       this.botToken,
       this.allowlist,
+      input.requireMention,
       this.replies,
       this.actions,
       input.orchestrator,
@@ -64,6 +68,32 @@ export class SlackListener {
   }
 
   async start(): Promise<void> {
+    if (this.requireMention) {
+      try {
+        const auth = await this.webClient.auth.test();
+        const userId =
+          typeof auth.user_id === "string" ? auth.user_id.trim() : "";
+        if (userId) {
+          this.controller.setBotUserId(userId);
+          log.info("resolved slack bot user for mention gate", {
+            scope: "slack",
+            userId,
+          });
+        } else {
+          log.warn(
+            "auth.test missing user_id; require_mention will not filter",
+            {
+              scope: "slack",
+            },
+          );
+        }
+      } catch (error) {
+        log.warn("auth.test failed; require_mention will not filter", {
+          scope: "slack",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
     await this.socketClient.start();
     log.info("socket mode started", { scope: "slack" });
   }

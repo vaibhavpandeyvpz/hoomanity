@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import type { PlatformPrompt } from "../../contracts";
 import { attachmentsDir } from "../../paths";
+import type { WhatsAppChat } from "./mention-guard";
 
 export type WhatsAppMessage = {
   id?: { _serialized?: string };
@@ -13,6 +14,8 @@ export type WhatsAppMessage = {
   fromMe?: boolean;
   author?: string;
   timestamp?: number;
+  mentionedIds?: string[];
+  getChat?: () => Promise<WhatsAppChat>;
   getQuotedMessage?: () => Promise<WhatsAppMessage>;
   hasQuotedMsg?: boolean;
   downloadMedia?: () => Promise<
@@ -54,6 +57,7 @@ export function toWhatsAppConversationKey(chatId: string): string {
 
 export async function buildWhatsAppPlatformPrompt(
   message: WhatsAppMessage,
+  botWids?: string[],
 ): Promise<PlatformPrompt | undefined> {
   const chatId = message.from?.trim();
   if (!chatId || message.fromMe) return undefined;
@@ -86,6 +90,9 @@ export async function buildWhatsAppPlatformPrompt(
       source: "whatsapp_web",
       channelMeta: {
         channel: "whatsapp",
+        self: {
+          wids: botWids ?? [],
+        },
         message: {
           id: message.id?._serialized,
           chat: { id: chatId },

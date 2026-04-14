@@ -34,6 +34,7 @@ const LISTENER_FACTORIES: NamedListenerFactory[] = [
         appToken: ctx.config.slack.app_token,
         botToken: ctx.config.slack.bot_token,
         allowlist: ctx.config.slack.allowlist,
+        requireMention: ctx.config.slack.require_mention,
         orchestrator: ctx.orchestrator,
         approvals: ctx.approvals,
         sessions: ctx.sessions,
@@ -49,6 +50,7 @@ const LISTENER_FACTORIES: NamedListenerFactory[] = [
       return new TelegramListener({
         botToken: ctx.config.telegram.bot_token,
         allowlist: ctx.config.telegram.allowlist,
+        requireMention: ctx.config.telegram.require_mention,
         orchestrator: ctx.orchestrator,
         approvals: ctx.approvals,
         sessions: ctx.sessions,

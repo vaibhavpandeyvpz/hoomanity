@@ -16,14 +16,17 @@ export class TelegramListener {
   private readonly bot: Telegraf;
   private readonly replies: TelegramReplies;
   private readonly controller: TelegramMessageController;
+  private readonly requireMention: boolean;
 
   constructor(input: {
     botToken: string;
     allowlist: IdAllowlist;
+    requireMention: boolean;
     orchestrator: CoreOrchestrator;
     approvals: ApprovalService;
     sessions: SessionRegistry;
   }) {
+    this.requireMention = input.requireMention;
     this.bot = new Telegraf(input.botToken);
     this.replies = new TelegramReplies(
       this.bot.telegram,
@@ -31,6 +34,7 @@ export class TelegramListener {
     );
     this.controller = new TelegramMessageController(
       input.allowlist,
+      input.requireMention,
       input.orchestrator,
       () => this.replies,
       () => this.bot.telegram,
@@ -92,6 +96,18 @@ export class TelegramListener {
   }
 
   async start(): Promise<void> {
+    if (this.requireMention) {
+      const me = await this.bot.telegram.getMe();
+      this.controller.setBotIdentity({
+        id: me.id,
+        username: me.username ?? undefined,
+      });
+      log.info("resolved telegram bot identity for mention gate", {
+        scope: "telegram",
+        botId: me.id,
+        hasUsername: Boolean(me.username),
+      });
+    }
     await this.bot.launch({
       allowedUpdates: ["message", "callback_query"],
     });

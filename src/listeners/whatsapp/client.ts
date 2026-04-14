@@ -18,12 +18,17 @@ type WhatsAppClient = {
   initialize: () => Promise<void>;
   sendMessage: (chatId: string, text: string) => Promise<unknown>;
   destroy?: () => Promise<void>;
+  info?: { wid?: { _serialized?: string } };
+  getContactLidAndPhone: (
+    userIds: string[],
+  ) => Promise<{ lid: string; pn: string }[]>;
 };
 
 export class WhatsAppListener {
   private client: WhatsAppClient | undefined;
   private replies: WhatsAppReplies | undefined;
   private readonly controller: WhatsAppMessageController;
+  private readonly requireMention: boolean;
 
   constructor(
     private readonly input: {
@@ -34,8 +39,10 @@ export class WhatsAppListener {
       sessions: SessionRegistry;
     },
   ) {
+    this.requireMention = Boolean(input.config.require_mention);
     this.controller = new WhatsAppMessageController(
       input.allowlist,
+      this.requireMention,
       input.orchestrator,
       input.approvals,
       () => this.replies,
@@ -67,8 +74,11 @@ export class WhatsAppListener {
         qr: String(qr).slice(0, 32),
       });
     });
-    client.on("ready", () => {
+    client.on("ready", async () => {
       log.info("listener ready", { scope: "whatsapp" });
+      if (this.requireMention) {
+        await this.resolveBotWids(client);
+      }
     });
     client.on("auth_failure", (message: unknown) => {
       log.error("auth failure", {
@@ -108,6 +118,36 @@ export class WhatsAppListener {
       this.client = undefined;
       this.replies = undefined;
     }
+  }
+
+  private async resolveBotWids(client: WhatsAppClient): Promise<void> {
+    const serialized = client.info?.wid?._serialized?.trim();
+    if (!serialized) {
+      log.warn("client missing wid; require_mention will not filter", {
+        scope: "whatsapp",
+      });
+      return;
+    }
+    const wids = [serialized];
+    try {
+      const results = await client.getContactLidAndPhone([serialized]);
+      for (const entry of results) {
+        const lid = entry.lid?.trim();
+        if (lid && !wids.includes(lid)) {
+          wids.push(lid);
+        }
+      }
+    } catch (error) {
+      log.warn("failed to resolve lid for bot wid", {
+        scope: "whatsapp",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    this.controller.setBotWids(wids);
+    log.info("resolved whatsapp bot wids for mention gate", {
+      scope: "whatsapp",
+      wids,
+    });
   }
 
   private async handleMessage(

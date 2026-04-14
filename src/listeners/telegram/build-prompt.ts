@@ -10,10 +10,19 @@ export type TelegramPhotoSize = {
   file_id?: string;
 };
 
+export type TelegramMessageEntity = {
+  type?: string;
+  offset?: number;
+  length?: number;
+  user?: { id?: number; is_bot?: boolean; username?: string };
+};
+
 export type TelegramInboundMessage = {
   message_id?: number;
   text?: string;
   caption?: string;
+  entities?: TelegramMessageEntity[];
+  caption_entities?: TelegramMessageEntity[];
   date?: number;
   message_thread_id?: number;
   chat?: {
@@ -152,6 +161,7 @@ export function mediaRefsFromTelegramMessage(
 export function buildTelegramPlatformPrompt(
   message: TelegramInboundMessage,
   attachments: StoredAttachment[],
+  botIdentity?: { id: number; username?: string },
 ): PlatformPrompt | undefined {
   const chatId = normalizeChatId(message.chat?.id);
   if (!chatId) {
@@ -185,6 +195,10 @@ export function buildTelegramPlatformPrompt(
       source: "telegram_polling",
       channelMeta: {
         channel: "telegram",
+        self: {
+          id: botIdentity?.id ?? null,
+          username: botIdentity?.username ?? null,
+        },
         message: {
           id: message.message_id,
           chat: {

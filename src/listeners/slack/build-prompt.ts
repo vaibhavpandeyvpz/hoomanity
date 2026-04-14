@@ -277,13 +277,14 @@ export async function buildSlackPlatformPrompt(
   envelope: SlackEnvelope,
   client: WebClient,
   botToken: string,
+  botUserId?: string,
 ): Promise<PlatformPrompt | undefined> {
   const event = envelope.event;
   if (!event || event.type !== "message") {
     return undefined;
   }
 
-  if (event.subtype === "bot_message" || event.bot_id) {
+  if (typeof event.subtype === "string" || event.bot_id) {
     return undefined;
   }
 
@@ -440,6 +441,9 @@ export async function buildSlackPlatformPrompt(
     metadata: {
       source: "slack_socket_mode",
       teamId: envelope.team_id,
+      self: {
+        userId: botUserId ?? null,
+      },
       channelMeta: {
         channel: "slack",
         message: slackMessage,
