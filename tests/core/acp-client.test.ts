@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { normalizeSessionNotification } from "../../src/core/acp-client";
+import {
+  AcpClient,
+  normalizeSessionNotification,
+} from "../../src/core/acp-client";
 
 describe("normalizeSessionNotification", () => {
   it("maps text chunks to core message events", () => {
@@ -18,5 +21,63 @@ describe("normalizeSessionNotification", () => {
     if (events[0]?.kind === "message_chunk") {
       expect(events[0].text).toBe("hello");
     }
+  });
+});
+
+describe("AcpClient session metadata", () => {
+  it("passes _meta.systemPrompt when creating a session", async () => {
+    let request: Record<string, unknown> | undefined;
+    const client = new AcpClient({} as any, {} as any);
+    (client as any).connection = {
+      newSession: async (input: Record<string, unknown>) => {
+        request = input;
+        return { sessionId: "session-1" };
+      },
+    };
+
+    const sessionId = await client.newSession(
+      "/tmp/workspace",
+      [],
+      "Prompt body",
+    );
+
+    expect(sessionId).toBe("session-1");
+    expect(request).toEqual({
+      cwd: "/tmp/workspace",
+      mcpServers: [],
+      _meta: {
+        systemPrompt: "Prompt body",
+      },
+    });
+  });
+
+  it("passes _meta.systemPrompt when loading a persisted session", async () => {
+    let request: Record<string, unknown> | undefined;
+    const client = new AcpClient({} as any, {} as any);
+    (client as any).connection = {
+      loadSession: async (input: Record<string, unknown>) => {
+        request = input;
+      },
+    };
+    (client as any).init = {
+      agentCapabilities: {
+        loadSession: true,
+      },
+    };
+
+    await client.ensurePersistedSessionReady(
+      "session-1",
+      "/tmp/workspace",
+      "Prompt body",
+    );
+
+    expect(request).toEqual({
+      sessionId: "session-1",
+      cwd: "/tmp/workspace",
+      mcpServers: [],
+      _meta: {
+        systemPrompt: "Prompt body",
+      },
+    });
   });
 });

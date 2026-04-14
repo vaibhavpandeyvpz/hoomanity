@@ -10,6 +10,7 @@ import type {
   TurnResult,
 } from "../contracts";
 import { log } from "./logger";
+import { getPlatformSystemPrompt } from "../prompts";
 
 export class CoreOrchestrator {
   constructor(
@@ -56,7 +57,12 @@ export class CoreOrchestrator {
     }
     this.turnQueue.dropPending(conversationKey);
 
-    const sessionId = await this.acpClient.newSession(this.defaultCwd);
+    const systemPrompt = await getPlatformSystemPrompt(replyTarget.platform);
+    const sessionId = await this.acpClient.newSession(
+      this.defaultCwd,
+      [],
+      systemPrompt,
+    );
     this.sessionRegistry.upsert(
       conversationKey,
       sessionId,
@@ -89,6 +95,7 @@ export class CoreOrchestrator {
         const persisted = memory
           ? undefined
           : this.sessionRegistry.getPersisted(prompt.conversationKey);
+        const systemPrompt = await getPlatformSystemPrompt(prompt.platform);
 
         let sessionId: string;
         let cwd: string;
@@ -100,7 +107,11 @@ export class CoreOrchestrator {
           sessionId = persisted.sessionId;
           cwd = persisted.cwd;
           try {
-            await this.acpClient.ensurePersistedSessionReady(sessionId, cwd);
+            await this.acpClient.ensurePersistedSessionReady(
+              sessionId,
+              cwd,
+              systemPrompt,
+            );
           } catch (error) {
             log.warn("loadSession failed; starting new session", {
               scope: "orchestrator",
@@ -108,11 +119,19 @@ export class CoreOrchestrator {
               sessionId,
               error: error instanceof Error ? error.message : String(error),
             });
-            sessionId = await this.acpClient.newSession(this.defaultCwd);
+            sessionId = await this.acpClient.newSession(
+              this.defaultCwd,
+              [],
+              systemPrompt,
+            );
             cwd = this.defaultCwd;
           }
         } else {
-          sessionId = await this.acpClient.newSession(this.defaultCwd);
+          sessionId = await this.acpClient.newSession(
+            this.defaultCwd,
+            [],
+            systemPrompt,
+          );
           cwd = this.defaultCwd;
         }
 

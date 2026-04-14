@@ -24,6 +24,9 @@ const IMAGE_MIME_TYPES = new Set([
 ]);
 
 type EventSubscriber = (event: CoreEvent) => void | Promise<void>;
+type SessionMeta = {
+  systemPrompt?: string;
+};
 
 export class AcpClient {
   private connection: ClientSideConnection | undefined;
@@ -73,17 +76,27 @@ export class AcpClient {
     };
   }
 
-  async newSession(cwd: string, mcpServers: McpServer[] = []): Promise<string> {
+  async newSession(
+    cwd: string,
+    mcpServers: McpServer[] = [],
+    systemPrompt?: string,
+  ): Promise<string> {
     const connection = this.requireConnection();
     log.info("creating new session", {
       scope: "acp",
       cwd,
       mcpServers: mcpServers.length,
+      hasSystemPrompt: Boolean(systemPrompt?.trim()),
     });
-    const response = await connection.newSession({
-      cwd,
-      mcpServers,
-    });
+    const response = await connection.newSession(
+      this.withSessionMeta(
+        {
+          cwd,
+          mcpServers,
+        },
+        systemPrompt,
+      ),
+    );
     log.info("session created", {
       scope: "acp",
       sessionId: response.sessionId,
@@ -102,18 +115,28 @@ export class AcpClient {
   async ensurePersistedSessionReady(
     sessionId: string,
     cwd: string,
+    systemPrompt?: string,
   ): Promise<void> {
     if (this.promptReadySessions.has(sessionId)) {
       return;
     }
     const connection = this.requireConnection();
     if (this.supportsLoadSession()) {
-      log.info("loading persisted session", { scope: "acp", sessionId });
-      await connection.loadSession({
+      log.info("loading persisted session", {
+        scope: "acp",
         sessionId,
-        cwd,
-        mcpServers: [],
+        hasSystemPrompt: Boolean(systemPrompt?.trim()),
       });
+      await connection.loadSession(
+        this.withSessionMeta(
+          {
+            sessionId,
+            cwd,
+            mcpServers: [],
+          },
+          systemPrompt,
+        ),
+      );
     } else {
       log.info("reusing persisted session id without loadSession capability", {
         scope: "acp",
@@ -174,7 +197,7 @@ export class AcpClient {
     if (input.metadataJson) {
       blocks.push({
         type: "text",
-        text: `Platform metadata JSON:\n${input.metadataJson}`,
+        text: `Platform metadata:\n${input.metadataJson}`,
       });
     }
 
@@ -230,6 +253,22 @@ export class AcpClient {
     }
 
     return blocks;
+  }
+
+  private withSessionMeta<T extends object>(
+    input: T,
+    systemPrompt?: string,
+  ): T & { _meta?: SessionMeta } {
+    const trimmed = systemPrompt?.trim();
+    if (!trimmed) {
+      return input;
+    }
+    return {
+      ...input,
+      _meta: {
+        systemPrompt: trimmed,
+      },
+    };
   }
 
   private requireConnection(): ClientSideConnection {
