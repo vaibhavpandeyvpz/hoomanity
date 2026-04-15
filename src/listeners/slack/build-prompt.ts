@@ -273,11 +273,16 @@ async function resolveSlackChannelDisplayName(
  * Build {@link PlatformPrompt} from a Slack Events API envelope (Socket Mode body),
  * aligned with apps/backend slack-adapter: combined text + blocks, optional thread parent, files -> ~/.hoomanity/attachments.
  */
+export type SlackBotIdentity = {
+  id: string;
+  username?: string | null;
+};
+
 export async function buildSlackPlatformPrompt(
   envelope: SlackEnvelope,
   client: WebClient,
   token: string,
-  userId?: string,
+  botIdentity?: SlackBotIdentity,
 ): Promise<PlatformPrompt | undefined> {
   const event = envelope.event;
   if (!event || event.type !== "message") {
@@ -441,11 +446,12 @@ export async function buildSlackPlatformPrompt(
     metadata: {
       source: "slack_socket_mode",
       teamId: envelope.team_id,
-      self: {
-        userId: userId ?? null,
-      },
       channelMeta: {
         channel: "slack",
+        self: {
+          id: botIdentity?.id ?? null,
+          username: botIdentity?.username ?? null,
+        },
         message: slackMessage,
       },
       blocksSummary: blocksSummary ?? null,

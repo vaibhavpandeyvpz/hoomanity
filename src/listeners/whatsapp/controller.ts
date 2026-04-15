@@ -33,6 +33,7 @@ type WhatsAppClient = {
 export class WhatsAppMessageController {
   private readonly pendingByChatId = new Map<string, WhatsAppPendingApproval>();
   private botWids: string[] = [];
+  private botUsername: string | null = null;
 
   constructor(
     private readonly allowlist: IdAllowlist,
@@ -60,8 +61,10 @@ export class WhatsAppMessageController {
     });
   }
 
-  setBotWids(wids: string[]): void {
+  setBotWids(wids: string[], username?: string | null): void {
     this.botWids = wids.map((w) => w.trim()).filter(Boolean);
+    this.botUsername =
+      typeof username === "string" && username.trim() ? username.trim() : null;
   }
 
   clearState(): void {
@@ -155,7 +158,11 @@ export class WhatsAppMessageController {
       return;
     }
 
-    const prompt = await buildWhatsAppPlatformPrompt(message, this.botWids);
+    const prompt = await buildWhatsAppPlatformPrompt(message, {
+      id: this.botWids[0] ?? null,
+      username: this.botUsername,
+      wids: this.botWids,
+    });
     if (!prompt || !this.replies()) return;
 
     await setWhatsAppProcessingReaction(message, "add");

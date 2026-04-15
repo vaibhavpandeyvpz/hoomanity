@@ -103,31 +103,30 @@ export class SlackListener {
   }
 
   async start(): Promise<void> {
-    if (this.requireMention) {
-      try {
-        const auth = await this.webClient.auth.test();
-        const userId =
-          typeof auth.user_id === "string" ? auth.user_id.trim() : "";
-        if (userId) {
-          this.controller.setUserId(userId);
-          log.info("resolved slack auth user for mention gate", {
-            scope: "slack",
-            userId,
-          });
-        } else {
-          log.warn(
-            "auth.test missing user_id; require_mention will not filter",
-            {
-              scope: "slack",
-            },
-          );
-        }
-      } catch (error) {
-        log.warn("auth.test failed; require_mention will not filter", {
+    try {
+      const auth = await this.webClient.auth.test();
+      const id = typeof auth.user_id === "string" ? auth.user_id.trim() : "";
+      if (id) {
+        const username =
+          typeof auth.user === "string" && auth.user.trim()
+            ? auth.user.trim()
+            : null;
+        this.controller.setBotIdentity({ id, username });
+        log.info("resolved slack bot identity", {
           scope: "slack",
-          error: error instanceof Error ? error.message : String(error),
+          userId: id,
+          hasUsername: username != null,
+        });
+      } else {
+        log.warn("auth.test missing user_id", {
+          scope: "slack",
         });
       }
+    } catch (error) {
+      log.warn("auth.test failed", {
+        scope: "slack",
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
     await this.socketClient.start();
     log.info("socket mode started", { scope: "slack" });

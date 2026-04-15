@@ -18,7 +18,7 @@ type WhatsAppClient = {
   initialize: () => Promise<void>;
   sendMessage: (chatId: string, text: string) => Promise<unknown>;
   destroy?: () => Promise<void>;
-  info?: { wid?: { _serialized?: string } };
+  info?: { wid?: { _serialized?: string }; pushname?: string };
   getContactLidAndPhone: (
     userIds: string[],
   ) => Promise<{ lid: string; pn: string }[]>;
@@ -76,9 +76,7 @@ export class WhatsAppListener {
     });
     client.on("ready", async () => {
       log.info("listener ready", { scope: "whatsapp" });
-      if (this.requireMention) {
-        await this.resolveBotWids(client);
-      }
+      await this.resolveBotIdentity(client);
     });
     client.on("auth_failure", (message: unknown) => {
       log.error("auth failure", {
@@ -120,33 +118,40 @@ export class WhatsAppListener {
     }
   }
 
-  private async resolveBotWids(client: WhatsAppClient): Promise<void> {
+  private async resolveBotIdentity(client: WhatsAppClient): Promise<void> {
     const serialized = client.info?.wid?._serialized?.trim();
+    const pushname =
+      typeof client.info?.pushname === "string" && client.info.pushname.trim()
+        ? client.info.pushname.trim()
+        : null;
     if (!serialized) {
-      log.warn("client missing wid; require_mention will not filter", {
+      log.warn("client missing wid", {
         scope: "whatsapp",
       });
       return;
     }
     const wids = [serialized];
-    try {
-      const results = await client.getContactLidAndPhone([serialized]);
-      for (const entry of results) {
-        const lid = entry.lid?.trim();
-        if (lid && !wids.includes(lid)) {
-          wids.push(lid);
+    if (this.requireMention) {
+      try {
+        const results = await client.getContactLidAndPhone([serialized]);
+        for (const entry of results) {
+          const lid = entry.lid?.trim();
+          if (lid && !wids.includes(lid)) {
+            wids.push(lid);
+          }
         }
+      } catch (error) {
+        log.warn("failed to resolve lid for bot wid", {
+          scope: "whatsapp",
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
-    } catch (error) {
-      log.warn("failed to resolve lid for bot wid", {
-        scope: "whatsapp",
-        error: error instanceof Error ? error.message : String(error),
-      });
     }
-    this.controller.setBotWids(wids);
-    log.info("resolved whatsapp bot wids for mention gate", {
+    this.controller.setBotWids(wids, pushname);
+    log.info("resolved whatsapp bot identity", {
       scope: "whatsapp",
-      wids,
+      widCount: wids.length,
+      hasPushname: pushname != null,
     });
   }
 

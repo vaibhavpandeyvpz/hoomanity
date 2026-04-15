@@ -21,5 +21,13 @@ describe("buildWhatsAppPlatformPrompt", () => {
     expect(prompt?.platform).toBe("whatsapp");
     expect(prompt?.conversationKey).toBe("whatsapp:12345@c.us");
     expect(prompt?.text).toBe("hola");
+    const meta = prompt?.metadata as {
+      channelMeta?: { self?: Record<string, unknown> };
+    };
+    expect(meta?.channelMeta?.self).toEqual({
+      id: null,
+      username: null,
+      wids: [],
+    });
   });
 });

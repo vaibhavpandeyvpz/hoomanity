@@ -55,9 +55,17 @@ export function toWhatsAppConversationKey(chatId: string): string {
   return `whatsapp:${chatId}`;
 }
 
+export type WhatsAppBotIdentity = {
+  /** Primary WhatsApp JID for this session (e.g. `15551234567@c.us`). */
+  id: string | null;
+  username: string | null;
+  /** All JIDs that can represent this account in @-mentions (e.g. PN + LID). */
+  wids: string[];
+};
+
 export async function buildWhatsAppPlatformPrompt(
   message: WhatsAppMessage,
-  botWids?: string[],
+  botIdentity?: WhatsAppBotIdentity,
 ): Promise<PlatformPrompt | undefined> {
   const chatId = message.from?.trim();
   if (!chatId || message.fromMe) return undefined;
@@ -91,7 +99,9 @@ export async function buildWhatsAppPlatformPrompt(
       channelMeta: {
         channel: "whatsapp",
         self: {
-          wids: botWids ?? [],
+          id: botIdentity?.id ?? null,
+          username: botIdentity?.username ?? null,
+          wids: botIdentity?.wids?.length ? botIdentity.wids : [],
         },
         message: {
           id: message.id?._serialized,
