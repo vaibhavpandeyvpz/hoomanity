@@ -22,9 +22,6 @@ export function buildTabFields(input: BuildFieldsInput): FieldItem[] {
       fieldText("acp.cmd", "ACP command", draft.acp.cmd, (value) =>
         update((cfg) => ({ ...cfg, acp: { ...cfg.acp, cmd: value.trim() } })),
       ),
-      fieldText("acp.cwd", "ACP working directory", draft.acp.cwd, (value) =>
-        update((cfg) => ({ ...cfg, acp: { ...cfg.acp, cwd: value.trim() } })),
-      ),
     ];
   }
 

@@ -7,7 +7,6 @@ import { configFilePath } from "./paths";
 export type AppConfig = {
   acp: {
     cmd: string;
-    cwd: string;
   };
   approvals: {
     timeout_ms: number;
@@ -74,7 +73,6 @@ export async function writeEditableConfig(
   const payload: FileConfig = {
     acp: {
       cmd: config.acp.cmd,
-      cwd: config.acp.cwd,
     },
     approvals: {
       timeout_ms: config.approvals.timeout_ms,
@@ -120,7 +118,6 @@ function resolveConfig(env: NodeJS.ProcessEnv): {
   const config: AppConfig = {
     acp: {
       cmd: env.ACP_CMD ?? env.ACP_AGENT_COMMAND ?? fromFile.acp?.cmd ?? "",
-      cwd: env.ACP_CWD ?? fromFile.acp?.cwd ?? process.cwd(),
     },
     approvals: {
       timeout_ms:

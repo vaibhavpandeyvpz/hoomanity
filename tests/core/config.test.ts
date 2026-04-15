@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -41,6 +41,7 @@ describe("loadConfig", () => {
         ...process.env,
         HOOMANITY_CONFIG_PATH: configPath,
       });
+      expect(config.acp).toEqual({ cmd: "true" });
       expect(config.slack.allowlist).toEqual(["C123", "C456"]);
       expect(config.telegram.allowlist).toEqual(["12345", "67890"]);
       expect(config.whatsapp.allowlist).toEqual(["15550000001", "15550000002"]);
@@ -81,7 +82,6 @@ describe("loadConfig", () => {
         HOOMANITY_CONFIG_PATH: configPath,
       });
       config.acp.cmd = "bun x codex";
-      config.acp.cwd = "/tmp/project";
       config.slack.enabled = true;
       config.slack.token = "xoxp-demo";
       config.slack.app_token = "xapp-demo";
@@ -97,12 +97,16 @@ describe("loadConfig", () => {
         HOOMANITY_CONFIG_PATH: configPath,
       });
 
+      const rawOnDisk = JSON.parse(await readFile(configPath, "utf8")) as {
+        acp?: Record<string, unknown>;
+      };
+      expect(rawOnDisk.acp).toEqual({ cmd: "bun x codex" });
+
       const reloaded = loadConfig({
         ...process.env,
         HOOMANITY_CONFIG_PATH: configPath,
       });
       expect(reloaded.acp.cmd).toBe("bun x codex");
-      expect(reloaded.acp.cwd).toBe("/tmp/project");
       expect(reloaded.slack.enabled).toBe(true);
       expect(reloaded.slack.token).toBe("xoxp-demo");
       expect(reloaded.slack.app_token).toBe("xapp-demo");

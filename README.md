@@ -98,7 +98,7 @@ The configure UI is the easiest way to manage values, but environment variables 
 
 Notable config areas:
 
-- `acp`: the ACP command and working directory for your chosen agent runtime
+- `acp`: the ACP command for your chosen agent runtime
 - `slack`: Socket Mode app token, user or bot token, allowlist
 - `telegram`: bot token, allowlist
 - `whatsapp`: session settings, auth flow, and allowlist

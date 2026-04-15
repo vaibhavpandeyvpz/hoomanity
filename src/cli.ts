@@ -55,9 +55,10 @@ await program.parseAsync();
 async function startApp(): Promise<void> {
   log.info("starting hoomanity relay", { scope: "app" });
   const config = loadConfig();
+  const acpCwd = process.cwd();
   log.info("config loaded", {
     scope: "app",
-    acpCwd: config.acp.cwd,
+    acpCwd,
     approvalTimeoutMs: config.approvals.timeout_ms,
     slackAllowlist:
       config.slack.allowlist === "*" ? "*" : config.slack.allowlist.length,
@@ -73,7 +74,7 @@ async function startApp(): Promise<void> {
     telegramEnabled: config.telegram.enabled,
     whatsappEnabled: config.whatsapp.enabled,
   });
-  const transport = new StdioAgentTransport(config.acp.cmd, config.acp.cwd);
+  const transport = new StdioAgentTransport(config.acp.cmd, acpCwd);
   const approvals = new ApprovalService(config.approvals.timeout_ms);
   const acpClient = new AcpClient(transport, approvals);
   const sessionStore = new AcpSessionStore(acpSessionsPath);
@@ -86,7 +87,7 @@ async function startApp(): Promise<void> {
     sessions,
     approvals,
     queue,
-    config.acp.cwd,
+    acpCwd,
     (platform) => mcpServersByPlatform.get(platform)?.() ?? [],
   );
 

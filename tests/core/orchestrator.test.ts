@@ -111,6 +111,7 @@ describe("CoreOrchestrator.resetConversation", () => {
     expect(result).toEqual({ sessionId: "session-1" });
     expect(turnQueue.dropPending).toHaveBeenCalledWith("slack:C123");
     expect(acpClient.newSession).toHaveBeenCalledTimes(1);
+    expect(acpClient.newSession.mock.calls[0]?.[0]).toBe("/tmp/workspace");
     expect(acpClient.newSession.mock.calls[0]?.[1]).toEqual(mcpServers);
   });
 });
