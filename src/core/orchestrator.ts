@@ -1,3 +1,4 @@
+import type { McpServer } from "@agentclientprotocol/sdk";
 import type { AcpClient } from "./acp-client";
 import type { ApprovalService } from "./approval-service";
 import type { SessionRegistry } from "./session-registry";
@@ -5,6 +6,7 @@ import { isTurnQueueDroppedError, TurnQueue } from "./turn-queue";
 import type {
   ConversationKey,
   PlatformPrompt,
+  PlatformName,
   PlatformReplyTarget,
   TurnHooks,
   TurnResult,
@@ -19,6 +21,9 @@ export class CoreOrchestrator {
     private readonly approvals: ApprovalService,
     private readonly turnQueue: TurnQueue,
     private readonly defaultCwd: string,
+    private readonly getMcpServersForPlatform: (
+      platform: PlatformName,
+    ) => McpServer[] = () => [],
   ) {}
 
   /**
@@ -67,9 +72,10 @@ export class CoreOrchestrator {
     this.turnQueue.dropPending(conversationKey);
 
     const systemPrompt = await getPlatformSystemPrompt(replyTarget.platform);
+    const mcpServers = this.getMcpServers(replyTarget.platform);
     const sessionId = await this.acpClient.newSession(
       this.defaultCwd,
-      [],
+      mcpServers,
       systemPrompt,
     );
     this.sessionRegistry.upsert(
@@ -105,6 +111,7 @@ export class CoreOrchestrator {
           ? undefined
           : this.sessionRegistry.getPersisted(prompt.conversationKey);
         const systemPrompt = await getPlatformSystemPrompt(prompt.platform);
+        const mcpServers = this.getMcpServers(prompt.platform);
 
         let sessionId: string;
         let cwd: string;
@@ -119,6 +126,7 @@ export class CoreOrchestrator {
             await this.acpClient.ensurePersistedSessionReady(
               sessionId,
               cwd,
+              mcpServers,
               systemPrompt,
             );
           } catch (error) {
@@ -130,7 +138,7 @@ export class CoreOrchestrator {
             });
             sessionId = await this.acpClient.newSession(
               this.defaultCwd,
-              [],
+              mcpServers,
               systemPrompt,
             );
             cwd = this.defaultCwd;
@@ -138,7 +146,7 @@ export class CoreOrchestrator {
         } else {
           sessionId = await this.acpClient.newSession(
             this.defaultCwd,
-            [],
+            mcpServers,
             systemPrompt,
           );
           cwd = this.defaultCwd;
@@ -225,5 +233,9 @@ export class CoreOrchestrator {
       }
       throw error;
     }
+  }
+
+  private getMcpServers(platform: PlatformName) {
+    return this.getMcpServersForPlatform(platform);
   }
 }

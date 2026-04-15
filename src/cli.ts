@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import type { McpServer } from "@agentclientprotocol/sdk";
 import { Command } from "commander";
 import { StdioAgentTransport } from "./core/agent-transport";
 import { ApprovalService } from "./core/approval-service";
@@ -79,12 +80,14 @@ async function startApp(): Promise<void> {
   const sessions = new SessionRegistry(sessionStore);
   await sessions.hydrateFromDisk();
   const queue = new TurnQueue();
+  const mcpServersByPlatform = new Map<string, () => McpServer[]>();
   const orchestrator = new CoreOrchestrator(
     acpClient,
     sessions,
     approvals,
     queue,
     config.acp.cwd,
+    (platform) => mcpServersByPlatform.get(platform)?.() ?? [],
   );
 
   await acpClient.connect();
@@ -97,6 +100,9 @@ async function startApp(): Promise<void> {
     sessions,
   });
   for (const { name, listener } of enabledListeners) {
+    if (listener.mcpServers) {
+      mcpServersByPlatform.set(name, () => listener.mcpServers?.() ?? []);
+    }
     listeners.push(listener);
     log.info(`scheduling ${name} listener start`, { scope: "app" });
     void Promise.resolve()

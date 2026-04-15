@@ -115,6 +115,7 @@ export class AcpClient {
   async ensurePersistedSessionReady(
     sessionId: string,
     cwd: string,
+    mcpServers: McpServer[] = [],
     systemPrompt?: string,
   ): Promise<void> {
     if (this.promptReadySessions.has(sessionId)) {
@@ -132,7 +133,7 @@ export class AcpClient {
           {
             sessionId,
             cwd,
-            mcpServers: [],
+            mcpServers,
           },
           systemPrompt,
         ),

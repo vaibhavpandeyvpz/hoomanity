@@ -68,3 +68,49 @@ describe("CoreOrchestrator.cancelInFlight", () => {
     expect(approvals.cancelForSession).toHaveBeenCalledWith("session-1");
   });
 });
+
+describe("CoreOrchestrator.resetConversation", () => {
+  it("creates sessions with MCP servers from the injected provider", async () => {
+    const acpClient = {
+      newSession: mock(async () => "session-1"),
+    } as any;
+    const sessionRegistry = {
+      getPersisted: () => undefined,
+      upsert: mock(() => {}),
+    } as any;
+    const approvals = {
+      hasPendingForSession: () => false,
+      cancelForSession: mock(() => {}),
+    } as any;
+    const turnQueue = {
+      dropPending: mock(() => {}),
+      hasActive: () => false,
+    } as any;
+    const mcpServers = [
+      {
+        name: "_default_test",
+        command: "npx",
+        args: ["-y", "fake-mcp-server", "--transport", "stdio"],
+        env: [{ name: "TEST_TOKEN", value: "demo-token" }],
+      },
+    ];
+    const orchestrator = new CoreOrchestrator(
+      acpClient,
+      sessionRegistry,
+      approvals,
+      turnQueue,
+      "/tmp/workspace",
+      () => mcpServers as any,
+    );
+
+    const result = await orchestrator.resetConversation("slack:C123", {
+      platform: "slack",
+      channelId: "C123",
+    });
+
+    expect(result).toEqual({ sessionId: "session-1" });
+    expect(turnQueue.dropPending).toHaveBeenCalledWith("slack:C123");
+    expect(acpClient.newSession).toHaveBeenCalledTimes(1);
+    expect(acpClient.newSession.mock.calls[0]?.[1]).toEqual(mcpServers);
+  });
+});

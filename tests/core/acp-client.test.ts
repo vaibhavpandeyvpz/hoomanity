@@ -54,6 +54,14 @@ describe("AcpClient session metadata", () => {
   it("passes _meta.systemPrompt when loading a persisted session", async () => {
     let request: Record<string, unknown> | undefined;
     const client = new AcpClient({} as any, {} as any);
+    const mcpServers = [
+      {
+        name: "_default_slack",
+        command: "npx",
+        args: ["-y", "slack-mcp-server", "--transport", "stdio"],
+        env: [{ name: "SLACK_MCP_XOXP_TOKEN", value: "xoxp-user-token" }],
+      },
+    ];
     (client as any).connection = {
       loadSession: async (input: Record<string, unknown>) => {
         request = input;
@@ -68,13 +76,14 @@ describe("AcpClient session metadata", () => {
     await client.ensurePersistedSessionReady(
       "session-1",
       "/tmp/workspace",
+      mcpServers as any,
       "Prompt body",
     );
 
     expect(request).toEqual({
       sessionId: "session-1",
       cwd: "/tmp/workspace",
-      mcpServers: [],
+      mcpServers,
       _meta: {
         systemPrompt: "Prompt body",
       },
