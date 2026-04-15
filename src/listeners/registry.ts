@@ -26,13 +26,13 @@ const LISTENER_FACTORIES: NamedListenerFactory[] = [
       if (
         !ctx.config.slack.enabled ||
         !ctx.config.slack.app_token ||
-        !ctx.config.slack.bot_token
+        !ctx.config.slack.token
       ) {
         return undefined;
       }
       return new SlackListener({
         appToken: ctx.config.slack.app_token,
-        botToken: ctx.config.slack.bot_token,
+        token: ctx.config.slack.token,
         allowlist: ctx.config.slack.allowlist,
         requireMention: ctx.config.slack.require_mention,
         orchestrator: ctx.orchestrator,

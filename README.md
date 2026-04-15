@@ -99,7 +99,7 @@ The configure UI is the easiest way to manage values, but environment variables 
 Notable config areas:
 
 - `acp`: the ACP command and working directory for your chosen agent runtime
-- `slack`: Socket Mode app token, bot token, allowlist
+- `slack`: Socket Mode app token, user or bot token, allowlist
 - `telegram`: bot token, allowlist
 - `whatsapp`: session settings, auth flow, and allowlist
 
@@ -107,6 +107,103 @@ Example agent choices:
 
 - Existing setup: point `acp.cmd` to the ACP command for Cursor, OpenCode, or another compatible agent process
 - Local setup: point `acp.cmd` to a local [hoomanjs](https://www.npmjs.com/package/hoomanjs) command backed by Ollama and Gemma 4
+
+### Slack Setup
+
+Slack uses Socket Mode, so you need:
+
+- `slack.app_token`: your Slack app token
+- `slack.token`: either a bot token or a user token from the installed Slack app
+
+You can use the following Slack app manifest to create the app, then install it into your workspace and use either the bot token or user token from that app together with the app token.
+
+```json
+{
+  "display_information": {
+    "name": "Hooman",
+    "description": "Responds to messages in DMs, channels, and groups.",
+    "background_color": "#1a1a2e"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "Hooman",
+      "always_online": true
+    }
+  },
+  "oauth_config": {
+    "redirect_urls": [],
+    "scopes": {
+      "user": [
+        "users:read.email",
+        "channels:history",
+        "channels:read",
+        "chat:write",
+        "files:read",
+        "files:write",
+        "groups:history",
+        "groups:read",
+        "im:history",
+        "im:read",
+        "im:write",
+        "mpim:history",
+        "mpim:read",
+        "mpim:write",
+        "reactions:read",
+        "reactions:write",
+        "search:read",
+        "usergroups:read",
+        "usergroups:write",
+        "users:read"
+      ],
+      "bot": [
+        "users:read.email",
+        "channels:history",
+        "channels:read",
+        "chat:write",
+        "files:read",
+        "files:write",
+        "groups:history",
+        "groups:read",
+        "im:history",
+        "im:read",
+        "im:write",
+        "mpim:history",
+        "mpim:read",
+        "mpim:write",
+        "reactions:read",
+        "reactions:write",
+        "usergroups:read",
+        "usergroups:write",
+        "users:read"
+      ]
+    },
+    "pkce_enabled": false
+  },
+  "settings": {
+    "event_subscriptions": {
+      "user_events": [
+        "message.channels",
+        "message.groups",
+        "message.im",
+        "message.mpim"
+      ],
+      "bot_events": [
+        "message.channels",
+        "message.groups",
+        "message.im",
+        "message.mpim"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": true,
+    "token_rotation_enabled": false,
+    "is_mcp_enabled": false
+  }
+}
+```
 
 ## Development
 

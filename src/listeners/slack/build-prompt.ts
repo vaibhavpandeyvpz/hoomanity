@@ -86,7 +86,7 @@ async function saveBufferToAttachments(
 
 async function downloadSlackFiles(
   files: SlackFileInput[],
-  botToken: string,
+  token: string,
 ): Promise<
   Array<{ localPath: string; originalName: string; mimeType: string }>
 > {
@@ -100,7 +100,7 @@ async function downloadSlackFiles(
     if (!url || typeof url !== "string") continue;
     try {
       const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${botToken}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         log.warn("file download failed", {
@@ -276,8 +276,8 @@ async function resolveSlackChannelDisplayName(
 export async function buildSlackPlatformPrompt(
   envelope: SlackEnvelope,
   client: WebClient,
-  botToken: string,
-  botUserId?: string,
+  token: string,
+  userId?: string,
 ): Promise<PlatformPrompt | undefined> {
   const event = envelope.event;
   if (!event || event.type !== "message") {
@@ -307,7 +307,7 @@ export async function buildSlackPlatformPrompt(
   const threadTs = event.thread_ts;
 
   const messageFiles = (event.files as SlackFileInput[] | undefined) ?? [];
-  const fromMessage = await downloadSlackFiles(messageFiles, botToken);
+  const fromMessage = await downloadSlackFiles(messageFiles, token);
   let storedAttachments = [...fromMessage];
 
   let parentSlackMessage: Record<string, unknown> | null = null;
@@ -338,7 +338,7 @@ export async function buildSlackPlatformPrompt(
           parentSenderName = parent.user ?? "";
         }
         const parentFiles = Array.isArray(parent.files) ? parent.files : [];
-        parentStored = await downloadSlackFiles(parentFiles, botToken);
+        parentStored = await downloadSlackFiles(parentFiles, token);
         if (parentStored.length > 0) {
           storedAttachments = [
             ...storedAttachments,
@@ -442,7 +442,7 @@ export async function buildSlackPlatformPrompt(
       source: "slack_socket_mode",
       teamId: envelope.team_id,
       self: {
-        userId: botUserId ?? null,
+        userId: userId ?? null,
       },
       channelMeta: {
         channel: "slack",

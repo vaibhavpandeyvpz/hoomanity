@@ -14,7 +14,7 @@ export type AppConfig = {
   };
   slack: {
     enabled: boolean;
-    bot_token?: string;
+    token?: string;
     app_token?: string;
     require_mention: boolean;
     allowlist: IdAllowlist;
@@ -81,7 +81,7 @@ export async function writeEditableConfig(
     },
     slack: {
       enabled: config.slack.enabled,
-      bot_token: config.slack.bot_token,
+      token: config.slack.token,
       app_token: config.slack.app_token,
       require_mention: config.slack.require_mention,
       allowlist: config.slack.allowlist,
@@ -130,7 +130,7 @@ function resolveConfig(env: NodeJS.ProcessEnv): {
     },
     slack: {
       enabled: parseBool(env.SLACK_ENABLED) ?? fromFile.slack?.enabled ?? false,
-      bot_token: env.SLACK_BOT_TOKEN ?? fromFile.slack?.bot_token,
+      token: env.SLACK_TOKEN ?? fromFile.slack?.token,
       app_token: env.SLACK_APP_TOKEN ?? fromFile.slack?.app_token,
       require_mention:
         parseBool(env.SLACK_REQUIRE_MENTION) ??
@@ -262,7 +262,7 @@ export function validateConfig(config: AppConfig, configPath: string): void {
     );
   }
   if (config.slack.enabled) {
-    assertRequired(config.slack.bot_token, "slack.bot_token", configPath);
+    assertRequired(config.slack.token, "slack.token", configPath);
     assertRequired(config.slack.app_token, "slack.app_token", configPath);
   }
   if (config.telegram.enabled) {

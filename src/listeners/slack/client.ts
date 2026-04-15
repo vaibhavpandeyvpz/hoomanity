@@ -13,7 +13,7 @@ import { log } from "../../core/logger";
 export class SlackListener {
   private readonly socketClient: SocketModeClient;
   private readonly webClient: WebClient;
-  private readonly botToken: string;
+  private readonly token: string;
   private readonly allowlist: IdAllowlist;
   private readonly requireMention: boolean;
   private readonly replies: SlackReplies;
@@ -21,7 +21,7 @@ export class SlackListener {
   private readonly controller: SlackMessageController;
 
   constructor(input: {
-    botToken: string;
+    token: string;
     appToken: string;
     allowlist: IdAllowlist;
     requireMention: boolean;
@@ -31,8 +31,8 @@ export class SlackListener {
   }) {
     this.allowlist = input.allowlist;
     this.requireMention = input.requireMention;
-    this.botToken = input.botToken;
-    this.webClient = new WebClient(input.botToken);
+    this.token = input.token;
+    this.webClient = new WebClient(input.token);
     this.socketClient = new SocketModeClient({
       appToken: input.appToken,
     });
@@ -40,7 +40,7 @@ export class SlackListener {
     this.actions = new SlackActions(input.approvals, this.replies);
     this.controller = new SlackMessageController(
       this.webClient,
-      this.botToken,
+      this.token,
       this.allowlist,
       input.requireMention,
       this.replies,
@@ -74,8 +74,8 @@ export class SlackListener {
         const userId =
           typeof auth.user_id === "string" ? auth.user_id.trim() : "";
         if (userId) {
-          this.controller.setBotUserId(userId);
-          log.info("resolved slack bot user for mention gate", {
+          this.controller.setUserId(userId);
+          log.info("resolved slack auth user for mention gate", {
             scope: "slack",
             userId,
           });

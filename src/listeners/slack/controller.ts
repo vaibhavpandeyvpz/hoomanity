@@ -16,7 +16,7 @@ export type SlackSocketEvent = {
 };
 
 export class SlackMessageController {
-  private botUserId: string | undefined;
+  private userId: string | undefined;
   private readonly conversationByChannelId = new Map<
     string,
     { is_im?: boolean }
@@ -24,7 +24,7 @@ export class SlackMessageController {
 
   constructor(
     private readonly webClient: WebClient,
-    private readonly botToken: string,
+    private readonly token: string,
     private readonly allowlist: IdAllowlist,
     private readonly requireMention: boolean,
     private readonly replies: SlackReplies,
@@ -32,8 +32,8 @@ export class SlackMessageController {
     private readonly orchestrator: CoreOrchestrator,
   ) {}
 
-  setBotUserId(userId: string): void {
-    this.botUserId = userId.trim() || undefined;
+  setUserId(userId: string): void {
+    this.userId = userId.trim() || undefined;
   }
 
   async handleSlackEvent(event: SlackSocketEvent): Promise<void> {
@@ -66,7 +66,7 @@ export class SlackMessageController {
     if (
       await slackEventsApiShouldIgnoreMissingMention(event.body, {
         requireMention: this.requireMention,
-        botUserId: this.botUserId,
+        userId: this.userId,
         resolveConversation: async (channelId) =>
           await this.resolveConversation(channelId),
       })
@@ -81,8 +81,8 @@ export class SlackMessageController {
     const prompt = await buildSlackPlatformPrompt(
       event.body,
       this.webClient,
-      this.botToken,
-      this.botUserId,
+      this.token,
+      this.userId,
     );
     if (!prompt) {
       return;

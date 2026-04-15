@@ -16,7 +16,7 @@ describe("buildSlackPlatformPrompt", () => {
         },
       },
       {} as WebClient,
-      "xoxb-test",
+      "xoxp-test",
     );
 
     expect(prompt).toBeUndefined();

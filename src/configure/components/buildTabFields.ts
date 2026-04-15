@@ -36,15 +36,11 @@ export function buildTabFields(input: BuildFieldsInput): FieldItem[] {
           slack: { ...cfg.slack, enabled: !cfg.slack.enabled },
         })),
       ),
-      fieldSecret(
-        "slack.bot_token",
-        "Bot token",
-        draft.slack.bot_token ?? "",
-        (value) =>
-          update((cfg) => ({
-            ...cfg,
-            slack: { ...cfg.slack, bot_token: toOptional(value) },
-          })),
+      fieldSecret("slack.token", "Token", draft.slack.token ?? "", (value) =>
+        update((cfg) => ({
+          ...cfg,
+          slack: { ...cfg.slack, token: toOptional(value) },
+        })),
       ),
       fieldSecret(
         "slack.app_token",

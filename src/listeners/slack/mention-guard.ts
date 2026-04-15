@@ -34,13 +34,13 @@ export async function slackEventsApiShouldIgnoreMissingMention(
   body: Record<string, unknown>,
   opts: {
     requireMention: boolean;
-    botUserId?: string;
+    userId?: string;
     resolveConversation?: (
       channelId: string,
     ) => Promise<{ is_im?: boolean } | undefined>;
   },
 ): Promise<boolean> {
-  if (!opts.requireMention || !opts.botUserId?.trim()) {
+  if (!opts.requireMention || !opts.userId?.trim()) {
     return false;
   }
   const event = body.event as SlackMessageEvent | undefined;
@@ -67,7 +67,7 @@ export async function slackEventsApiShouldIgnoreMissingMention(
   if (slackConversationIsDirectMessage(channel)) {
     return false;
   }
-  return !slackTextMentionsUser(combined, opts.botUserId.trim());
+  return !slackTextMentionsUser(combined, opts.userId.trim());
 }
 
 function escapeRegExp(value: string): string {

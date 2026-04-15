@@ -83,7 +83,7 @@ describe("loadConfig", () => {
       config.acp.cmd = "bun x codex";
       config.acp.cwd = "/tmp/project";
       config.slack.enabled = true;
-      config.slack.bot_token = "xoxb-demo";
+      config.slack.token = "xoxp-demo";
       config.slack.app_token = "xapp-demo";
       config.telegram.enabled = true;
       config.telegram.bot_token = "123:telegram-demo";
@@ -104,7 +104,7 @@ describe("loadConfig", () => {
       expect(reloaded.acp.cmd).toBe("bun x codex");
       expect(reloaded.acp.cwd).toBe("/tmp/project");
       expect(reloaded.slack.enabled).toBe(true);
-      expect(reloaded.slack.bot_token).toBe("xoxb-demo");
+      expect(reloaded.slack.token).toBe("xoxp-demo");
       expect(reloaded.slack.app_token).toBe("xapp-demo");
       expect(reloaded.telegram.enabled).toBe(true);
       expect(reloaded.telegram.bot_token).toBe("123:telegram-demo");

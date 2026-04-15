@@ -42,7 +42,7 @@ describe("slackEventsApiShouldIgnoreMissingMention", () => {
       }),
       {
         requireMention: true,
-        botUserId: "U9",
+        userId: "U9",
         resolveConversation: async () => ({ is_im: true }),
       },
     );
@@ -58,7 +58,7 @@ describe("slackEventsApiShouldIgnoreMissingMention", () => {
       }),
       {
         requireMention: true,
-        botUserId: "U9",
+        userId: "U9",
         resolveConversation: async () => ({ is_im: false }),
       },
     );
@@ -74,7 +74,7 @@ describe("slackEventsApiShouldIgnoreMissingMention", () => {
       }),
       {
         requireMention: true,
-        botUserId: "U9",
+        userId: "U9",
         resolveConversation: async () => ({ is_im: false }),
       },
     );
@@ -90,7 +90,7 @@ describe("slackEventsApiShouldIgnoreMissingMention", () => {
       }),
       {
         requireMention: true,
-        botUserId: "U9",
+        userId: "U9",
         resolveConversation: async () => ({ is_im: false }),
       },
     );
@@ -106,7 +106,7 @@ describe("slackEventsApiShouldIgnoreMissingMention", () => {
       }),
       {
         requireMention: false,
-        botUserId: "U9",
+        userId: "U9",
         resolveConversation: async () => ({ is_im: false }),
       },
     );
@@ -122,7 +122,7 @@ describe("slackEventsApiShouldIgnoreMissingMention", () => {
       }),
       {
         requireMention: true,
-        botUserId: "U9",
+        userId: "U9",
         resolveConversation: async () => ({ is_im: false }),
       },
     );
@@ -136,7 +136,7 @@ describe("slackEventsApiShouldIgnoreMissingMention", () => {
         channel: "D111",
         text: "hello",
       }),
-      { requireMention: true, botUserId: "U9" },
+      { requireMention: true, userId: "U9" },
     );
     expect(ignore).toBe(false);
   });
@@ -150,7 +150,7 @@ describe("slackEventsApiShouldIgnoreMissingMention", () => {
       }),
       {
         requireMention: true,
-        botUserId: "U9",
+        userId: "U9",
         resolveConversation: async () => undefined,
       },
     );
@@ -167,7 +167,7 @@ describe("slackEventsApiShouldIgnoreMissingMention", () => {
       }),
       {
         requireMention: true,
-        botUserId: "U9",
+        userId: "U9",
         resolveConversation: async () => ({ is_im: false }),
       },
     );
