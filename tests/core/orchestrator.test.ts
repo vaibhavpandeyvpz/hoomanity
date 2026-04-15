@@ -115,3 +115,95 @@ describe("CoreOrchestrator.resetConversation", () => {
     expect(acpClient.newSession.mock.calls[0]?.[1]).toEqual(mcpServers);
   });
 });
+
+describe("CoreOrchestrator.enqueuePrompt", () => {
+  it("does not fail the turn when onCompleted throws", async () => {
+    const acpClient = {
+      newSession: mock(async () => "session-1"),
+      ensurePersistedSessionReady: mock(async () => {}),
+      subscribe: mock(() => () => {}),
+      prompt: mock(async () => ({ stopReason: "end_turn" })),
+    } as any;
+    const sessionRegistry = {
+      getByConversation: () => undefined,
+      getPersisted: () => undefined,
+      upsert: mock(() => {}),
+    } as any;
+    const approvals = {} as any;
+    const turnQueue = {
+      enqueue: async (_key: string, fn: () => Promise<unknown>) => await fn(),
+    } as any;
+    const orchestrator = new CoreOrchestrator(
+      acpClient,
+      sessionRegistry,
+      approvals,
+      turnQueue,
+      "/tmp/workspace",
+    );
+
+    const result = await orchestrator.enqueuePrompt(
+      {
+        platform: "slack",
+        conversationKey: "slack:C123",
+        text: "hello",
+        metadata: {},
+        replyTarget: { platform: "slack", channelId: "C123" },
+        receivedAt: Date.now(),
+      },
+      {
+        onCompleted: async () => {
+          throw new Error("post failed");
+        },
+      },
+    );
+
+    expect(result?.sessionId).toBe("session-1");
+    expect(result?.stopReason).toBe("end_turn");
+  });
+
+  it("preserves the original error when onError throws", async () => {
+    const rootError = new Error("prompt failed");
+    const acpClient = {
+      newSession: mock(async () => "session-1"),
+      ensurePersistedSessionReady: mock(async () => {}),
+      subscribe: mock(() => () => {}),
+      prompt: mock(async () => {
+        throw rootError;
+      }),
+    } as any;
+    const sessionRegistry = {
+      getByConversation: () => undefined,
+      getPersisted: () => undefined,
+      upsert: mock(() => {}),
+    } as any;
+    const approvals = {} as any;
+    const turnQueue = {
+      enqueue: async (_key: string, fn: () => Promise<unknown>) => await fn(),
+    } as any;
+    const orchestrator = new CoreOrchestrator(
+      acpClient,
+      sessionRegistry,
+      approvals,
+      turnQueue,
+      "/tmp/workspace",
+    );
+
+    await expect(
+      orchestrator.enqueuePrompt(
+        {
+          platform: "slack",
+          conversationKey: "slack:C123",
+          text: "hello",
+          metadata: {},
+          replyTarget: { platform: "slack", channelId: "C123" },
+          receivedAt: Date.now(),
+        },
+        {
+          onError: async () => {
+            throw new Error("post error failed");
+          },
+        },
+      ),
+    ).rejects.toBe(rootError);
+  });
+});

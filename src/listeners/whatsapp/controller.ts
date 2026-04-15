@@ -26,10 +26,6 @@ export type WhatsAppRuntimeConfig = {
   require_mention?: boolean;
 };
 
-type WhatsAppClient = {
-  sendMessage: (chatId: string, text: string) => Promise<unknown>;
-};
-
 export class WhatsAppMessageController {
   private readonly pendingByChatId = new Map<string, WhatsAppPendingApproval>();
   private botWids: string[] = [];
@@ -41,7 +37,6 @@ export class WhatsAppMessageController {
     private readonly orchestrator: CoreOrchestrator,
     private readonly approvals: ApprovalService,
     private readonly replies: () => WhatsAppReplies | undefined,
-    private readonly client: () => WhatsAppClient | undefined,
     sessions: SessionRegistry,
   ) {
     approvals.subscribe(async (request) => {
@@ -136,8 +131,11 @@ export class WhatsAppMessageController {
           chatId,
           requestId: pending.requestId,
         });
-        if (this.client()) {
-          await this.client()?.sendMessage(chatId, "Approval received.");
+        if (this.replies()) {
+          await this.replies()?.postText(
+            { platform: "whatsapp", channelId: chatId },
+            "Approval received.",
+          );
         }
         return;
       }

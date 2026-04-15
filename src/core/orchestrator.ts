@@ -1,6 +1,7 @@
 import type { McpServer } from "@agentclientprotocol/sdk";
 import type { AcpClient } from "./acp-client";
 import type { ApprovalService } from "./approval-service";
+import { failSafe } from "./fail-safe";
 import type { SessionRegistry } from "./session-registry";
 import { isTurnQueueDroppedError, TurnQueue } from "./turn-queue";
 import type {
@@ -176,7 +177,16 @@ export class CoreOrchestrator {
           }
 
           if (hooks.onEvent) {
-            await hooks.onEvent(event);
+            await failSafe({
+              scope: "orchestrator",
+              action: "run turn hook",
+              fn: () => hooks.onEvent?.(event),
+              metadata: {
+                hookName: "onEvent",
+                conversationKey: prompt.conversationKey,
+                sessionId,
+              },
+            });
           }
         });
 
@@ -196,7 +206,16 @@ export class CoreOrchestrator {
           };
 
           if (hooks.onCompleted) {
-            await hooks.onCompleted(result);
+            await failSafe({
+              scope: "orchestrator",
+              action: "run turn hook",
+              fn: () => hooks.onCompleted?.(result),
+              metadata: {
+                hookName: "onCompleted",
+                conversationKey: prompt.conversationKey,
+                sessionId,
+              },
+            });
           }
 
           log.info("turn completed", {
@@ -216,7 +235,16 @@ export class CoreOrchestrator {
             error: error instanceof Error ? error.message : String(error),
           });
           if (hooks.onError) {
-            await hooks.onError(error);
+            await failSafe({
+              scope: "orchestrator",
+              action: "run turn hook",
+              fn: () => hooks.onError?.(error),
+              metadata: {
+                hookName: "onError",
+                conversationKey: prompt.conversationKey,
+                sessionId,
+              },
+            });
           }
           throw error;
         } finally {

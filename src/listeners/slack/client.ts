@@ -15,10 +15,7 @@ export class SlackListener {
   private readonly socketClient: SocketModeClient;
   private readonly webClient: WebClient;
   private readonly token: string;
-  private readonly allowlist: IdAllowlist;
-  private readonly requireMention: boolean;
   private readonly replies: SlackReplies;
-  private readonly actions: SlackActions;
   private readonly controller: SlackMessageController;
 
   constructor(input: {
@@ -30,41 +27,51 @@ export class SlackListener {
     approvals: ApprovalService;
     sessions: SessionRegistry;
   }) {
-    this.allowlist = input.allowlist;
-    this.requireMention = input.requireMention;
     this.token = input.token;
     this.webClient = new WebClient(input.token);
     this.socketClient = new SocketModeClient({
       appToken: input.appToken,
     });
     this.replies = new SlackReplies(this.webClient, new SlackFormatter());
-    this.actions = new SlackActions(input.approvals, this.replies);
+    const actions = new SlackActions(input.approvals, this.replies);
     this.controller = new SlackMessageController(
       this.webClient,
       this.token,
-      this.allowlist,
+      input.allowlist,
       input.requireMention,
       this.replies,
-      this.actions,
+      actions,
       input.orchestrator,
     );
 
-    this.socketClient.on("slack_event", async (event: SlackSocketEvent) => {
-      await this.controller.handleSlackEvent(event);
+    this.socketClient.on("slack_event", (event: SlackSocketEvent) => {
+      void this.controller.handleSlackEvent(event).catch((error: unknown) => {
+        log.error("event handling failed", {
+          scope: "slack",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
     });
 
-    input.approvals.subscribe(async (request) => {
-      const binding = input.sessions.getBySessionId(request.sessionId);
-      if (!binding || binding.replyTarget.platform !== "slack") {
-        return;
-      }
-      log.info("posting approval request", {
-        scope: "slack",
-        sessionId: request.sessionId,
-        requestId: request.requestId,
-        optionCount: request.options.length,
+    input.approvals.subscribe((request) => {
+      void (async () => {
+        const binding = input.sessions.getBySessionId(request.sessionId);
+        if (!binding || binding.replyTarget.platform !== "slack") {
+          return;
+        }
+        log.info("posting approval request", {
+          scope: "slack",
+          sessionId: request.sessionId,
+          requestId: request.requestId,
+          optionCount: request.options.length,
+        });
+        await this.replies.postApproval(binding.replyTarget, request);
+      })().catch((error: unknown) => {
+        log.error("approval handling failed", {
+          scope: "slack",
+          error: error instanceof Error ? error.message : String(error),
+        });
       });
-      await this.replies.postApproval(binding.replyTarget, request);
     });
   }
 

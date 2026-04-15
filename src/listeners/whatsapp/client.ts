@@ -46,7 +46,6 @@ export class WhatsAppListener {
       input.orchestrator,
       input.approvals,
       () => this.replies,
-      () => this.client,
       input.sessions,
     );
   }
@@ -74,9 +73,16 @@ export class WhatsAppListener {
         qr: String(qr).slice(0, 32),
       });
     });
-    client.on("ready", async () => {
-      log.info("listener ready", { scope: "whatsapp" });
-      await this.resolveBotIdentity(client);
+    client.on("ready", () => {
+      void (async () => {
+        log.info("listener ready", { scope: "whatsapp" });
+        await this.resolveBotIdentity(client);
+      })().catch((error: unknown) => {
+        log.error("ready handler failed", {
+          scope: "whatsapp",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
     });
     client.on("auth_failure", (message: unknown) => {
       log.error("auth failure", {
@@ -90,10 +96,15 @@ export class WhatsAppListener {
         reason: String(reason),
       });
     });
-    client.on("message_create", async (message: unknown) => {
-      await this.handleMessage(
+    client.on("message_create", (message: unknown) => {
+      void this.handleMessage(
         message as WhatsAppMessage & Record<string, unknown>,
-      );
+      ).catch((error: unknown) => {
+        log.error("message handling failed", {
+          scope: "whatsapp",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
     });
 
     await client.initialize();

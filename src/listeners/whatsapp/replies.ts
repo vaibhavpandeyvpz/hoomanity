@@ -3,6 +3,7 @@ import type {
   PlatformReplyTarget,
   TurnResult,
 } from "../../contracts";
+import { failSafe } from "../../core/fail-safe";
 import type { IFormatter } from "../../core/formatter";
 import { toUserFacingErrorMessage } from "../../core/user-facing-error";
 
@@ -22,18 +23,24 @@ export class WhatsAppReplies {
   ): Promise<void> {
     const text =
       result.collectedText.trim() || `Turn finished: ${result.stopReason}`;
-    await this.sendText(target.channelId, text);
+    await this.guard("post final reply", () =>
+      this.sendText(target.channelId, text),
+    );
   }
 
   async postError(target: PlatformReplyTarget, error: unknown): Promise<void> {
-    await this.sendText(
-      target.channelId,
-      `Error processing request: ${toMessage(error)}`,
+    await this.guard("post error reply", () =>
+      this.sendText(
+        target.channelId,
+        `Error processing request: ${toMessage(error)}`,
+      ),
     );
   }
 
   async postText(target: PlatformReplyTarget, text: string): Promise<void> {
-    await this.sendText(target.channelId, text);
+    await this.guard("post text reply", () =>
+      this.sendText(target.channelId, text),
+    );
   }
 
   async postApproval(
@@ -48,7 +55,9 @@ export class WhatsAppReplies {
       "- always to allow every time",
       "- no / n to reject",
     ].join("\n");
-    await this.sendText(target.channelId, text);
+    await this.guard("post approval request", () =>
+      this.sendText(target.channelId, text),
+    );
   }
 
   private async sendText(chatId: string, text: string): Promise<void> {
@@ -56,6 +65,14 @@ export class WhatsAppReplies {
     for (const chunk of chunks) {
       await this.client.sendMessage(chatId, chunk);
     }
+  }
+
+  private async guard(action: string, fn: () => Promise<void>): Promise<void> {
+    await failSafe({
+      scope: "whatsapp",
+      action,
+      fn,
+    });
   }
 }
 

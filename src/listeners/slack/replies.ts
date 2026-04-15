@@ -4,6 +4,7 @@ import type {
   PlatformReplyTarget,
   TurnResult,
 } from "../../contracts";
+import { failSafe } from "../../core/fail-safe";
 import type { IFormatter } from "../../core/formatter";
 import { toUserFacingErrorMessage } from "../../core/user-facing-error";
 
@@ -24,26 +25,32 @@ export class SlackReplies {
   ): Promise<void> {
     const text =
       result.collectedText.trim() || `Turn finished: ${result.stopReason}`;
-    await this.client.chat.postMessage({
-      channel: target.channelId,
-      thread_ts: target.threadTs,
-      text: this.formatOne(text),
+    await this.guard("post final reply", async () => {
+      await this.client.chat.postMessage({
+        channel: target.channelId,
+        thread_ts: target.threadTs,
+        text: this.formatOne(text),
+      });
     });
   }
 
   async postError(target: PlatformReplyTarget, error: unknown): Promise<void> {
-    await this.client.chat.postMessage({
-      channel: target.channelId,
-      thread_ts: target.threadTs,
-      text: this.formatOne(`Error processing request: ${toMessage(error)}`),
+    await this.guard("post error reply", async () => {
+      await this.client.chat.postMessage({
+        channel: target.channelId,
+        thread_ts: target.threadTs,
+        text: this.formatOne(`Error processing request: ${toMessage(error)}`),
+      });
     });
   }
 
   async postText(target: PlatformReplyTarget, text: string): Promise<void> {
-    await this.client.chat.postMessage({
-      channel: target.channelId,
-      thread_ts: target.threadTs,
-      text: this.formatOne(text),
+    await this.guard("post text reply", async () => {
+      await this.client.chat.postMessage({
+        channel: target.channelId,
+        thread_ts: target.threadTs,
+        text: this.formatOne(text),
+      });
     });
   }
 
@@ -81,59 +88,61 @@ export class SlackReplies {
     const text = this.formatOne(
       `Tool approval required: ${request.toolCall.title}`,
     );
-    const response = await this.client.chat.postMessage({
-      channel: target.channelId,
-      thread_ts: target.threadTs,
-      text,
-      blocks: [
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: `*Tool approval required*\n${request.toolCall.title}`,
-          },
-        },
-        {
-          type: "actions",
-          elements: request.options.map((option, index) => ({
-            type: "button",
+    await this.guard("post approval request", async () => {
+      const response = await this.client.chat.postMessage({
+        channel: target.channelId,
+        thread_ts: target.threadTs,
+        text,
+        blocks: [
+          {
+            type: "section",
             text: {
-              type: "plain_text",
-              text: option.name,
+              type: "mrkdwn",
+              text: `*Tool approval required*\n${request.toolCall.title}`,
             },
-            action_id: `approval_select_${index}`,
-            value: JSON.stringify({
-              requestId: request.requestId,
-              optionId: option.optionId,
-            }),
-          })),
-        },
-        {
-          type: "actions",
-          elements: [
-            {
+          },
+          {
+            type: "actions",
+            elements: request.options.map((option, index) => ({
               type: "button",
-              style: "danger",
               text: {
                 type: "plain_text",
-                text: "Cancel",
+                text: option.name,
               },
-              action_id: "approval_cancel",
+              action_id: `approval_select_${index}`,
               value: JSON.stringify({
                 requestId: request.requestId,
+                optionId: option.optionId,
               }),
-            },
-          ],
-        },
-      ],
-    });
-
-    if (response.ts) {
-      this.approvalMessageByRequestId.set(request.requestId, {
-        channel: target.channelId,
-        ts: response.ts,
+            })),
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button",
+                style: "danger",
+                text: {
+                  type: "plain_text",
+                  text: "Cancel",
+                },
+                action_id: "approval_cancel",
+                value: JSON.stringify({
+                  requestId: request.requestId,
+                }),
+              },
+            ],
+          },
+        ],
       });
-    }
+
+      if (response.ts) {
+        this.approvalMessageByRequestId.set(request.requestId, {
+          channel: target.channelId,
+          ts: response.ts,
+        });
+      }
+    });
   }
 
   async markApprovalResolved(requestId: string, label: string): Promise<void> {
@@ -142,24 +151,34 @@ export class SlackReplies {
       return;
     }
 
-    await this.client.chat.update({
-      channel: posted.channel,
-      ts: posted.ts,
-      text: this.formatOne(`Approval resolved: ${label}`),
-      blocks: [
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: this.formatOne(`Approval resolved: **${label}**`),
+    await this.guard("mark approval resolved", async () => {
+      await this.client.chat.update({
+        channel: posted.channel,
+        ts: posted.ts,
+        text: this.formatOne(`Approval resolved: ${label}`),
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: this.formatOne(`Approval resolved: **${label}**`),
+            },
           },
-        },
-      ],
+        ],
+      });
     });
   }
 
   private formatOne(text: string): string {
     return this.formatter.format(text)[0] ?? text;
+  }
+
+  private async guard(action: string, fn: () => Promise<void>): Promise<void> {
+    await failSafe({
+      scope: "slack",
+      action,
+      fn,
+    });
   }
 }
 

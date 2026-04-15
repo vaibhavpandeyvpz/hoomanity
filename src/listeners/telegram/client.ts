@@ -16,7 +16,6 @@ export class TelegramListener {
   private readonly bot: Telegraf;
   private readonly replies: TelegramReplies;
   private readonly controller: TelegramMessageController;
-  private readonly requireMention: boolean;
 
   constructor(input: {
     botToken: string;
@@ -26,7 +25,6 @@ export class TelegramListener {
     approvals: ApprovalService;
     sessions: SessionRegistry;
   }) {
-    this.requireMention = input.requireMention;
     this.bot = new Telegraf(input.botToken);
     this.replies = new TelegramReplies(
       this.bot.telegram,
