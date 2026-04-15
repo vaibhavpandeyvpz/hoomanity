@@ -1,6 +1,6 @@
 {
   "name": "hoomanity",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Open-source ACP relay for Slack, Telegram, and WhatsApp with a polished terminal configuration UI.",
   "author": {
     "name": "Vaibhav Pandey",
