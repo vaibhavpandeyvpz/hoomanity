@@ -1,3 +1,4 @@
+import type { McpServer } from "@agentclientprotocol/sdk";
 import { Telegraf, type Context } from "telegraf";
 import type { ApprovalService } from "../../core/approval-service";
 import type { CoreOrchestrator } from "../../core/orchestrator";
@@ -14,6 +15,7 @@ import type { TelegramInboundMessage } from "./build-prompt";
 
 export class TelegramListener {
   private readonly bot: Telegraf;
+  private readonly botToken: string;
   private readonly replies: TelegramReplies;
   private readonly controller: TelegramMessageController;
   private readonly requireMention: boolean;
@@ -27,6 +29,7 @@ export class TelegramListener {
     sessions: SessionRegistry;
   }) {
     this.requireMention = input.requireMention;
+    this.botToken = input.botToken;
     this.bot = new Telegraf(input.botToken);
     this.replies = new TelegramReplies(
       this.bot.telegram,
@@ -93,6 +96,17 @@ export class TelegramListener {
         error: error instanceof Error ? error.message : String(error),
       });
     });
+  }
+
+  mcpServers(): McpServer[] {
+    return [
+      {
+        name: "telegram",
+        command: "npx",
+        args: ["-y", "@iqai/mcp-telegram"],
+        env: [{ name: "TELEGRAM_BOT_TOKEN", value: this.botToken }],
+      },
+    ];
   }
 
   async start(): Promise<void> {
