@@ -1,4 +1,3 @@
-import type { McpServer } from "@agentclientprotocol/sdk";
 import { SocketModeClient } from "@slack/socket-mode";
 import { WebClient } from "@slack/web-api";
 import type { ApprovalService } from "../../core/approval-service";
@@ -73,40 +72,6 @@ export class SlackListener {
         });
       });
     });
-  }
-
-  mcpServers(): McpServer[] {
-    const env = [
-      { name: "SLACK_MCP_MARK_TOOL", value: "1" },
-      {
-        name: "SLACK_MCP_ENABLED_TOOLS",
-        value: [
-          "attachment_get_data",
-          "channels_list",
-          "conversations_add_message",
-          "conversations_history",
-          "conversations_replies",
-          "conversations_search_messages",
-          "conversations_unreads",
-          "reactions_add",
-          "reactions_remove",
-          "users_search",
-          "usergroups_list",
-          "usergroups_me",
-        ].join(","),
-      },
-      this.token.startsWith("xoxp-")
-        ? { name: "SLACK_MCP_XOXP_TOKEN", value: this.token }
-        : { name: "SLACK_MCP_XOXB_TOKEN", value: this.token },
-    ];
-    return [
-      {
-        name: "_default_slack",
-        command: "npx",
-        args: ["-y", "slack-mcp-server", "--transport", "stdio"],
-        env,
-      },
-    ];
   }
 
   async start(): Promise<void> {
