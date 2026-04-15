@@ -115,7 +115,9 @@ Slack uses Socket Mode, so you need:
 - `slack.app_token`: your Slack app token
 - `slack.token`: either a bot token or a user token from the installed Slack app
 
-You can use the following Slack app manifest to create the app, then install it into your workspace and use either the bot token or user token from that app together with the app token.
+You can use one of the following Slack app manifests to create the app, depending on whether you want to install and use a user token or a bot token. After creating the app, install it into your workspace and use the matching token together with the app token.
+
+User token manifest:
 
 ```json
 {
@@ -123,12 +125,6 @@ You can use the following Slack app manifest to create the app, then install it 
     "name": "Hooman",
     "description": "Responds to messages in DMs, channels, and groups.",
     "background_color": "#1a1a2e"
-  },
-  "features": {
-    "bot_user": {
-      "display_name": "Hooman",
-      "always_online": true
-    }
   },
   "oauth_config": {
     "redirect_urls": [],
@@ -154,7 +150,48 @@ You can use the following Slack app manifest to create the app, then install it 
         "usergroups:read",
         "usergroups:write",
         "users:read"
-      ],
+      ]
+    },
+    "pkce_enabled": false
+  },
+  "settings": {
+    "event_subscriptions": {
+      "user_events": [
+        "message.channels",
+        "message.groups",
+        "message.im",
+        "message.mpim"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": true,
+    "token_rotation_enabled": false,
+    "is_mcp_enabled": false
+  }
+}
+```
+
+Bot token manifest:
+
+```json
+{
+  "display_information": {
+    "name": "Hooman",
+    "description": "Responds to messages in DMs, channels, and groups.",
+    "background_color": "#1a1a2e"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "Hooman",
+      "always_online": true
+    }
+  },
+  "oauth_config": {
+    "redirect_urls": [],
+    "scopes": {
       "bot": [
         "users:read.email",
         "channels:history",
@@ -181,12 +218,6 @@ You can use the following Slack app manifest to create the app, then install it 
   },
   "settings": {
     "event_subscriptions": {
-      "user_events": [
-        "message.channels",
-        "message.groups",
-        "message.im",
-        "message.mpim"
-      ],
       "bot_events": [
         "message.channels",
         "message.groups",
