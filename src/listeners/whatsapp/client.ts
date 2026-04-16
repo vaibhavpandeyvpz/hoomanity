@@ -96,7 +96,7 @@ export class WhatsAppListener {
         reason: String(reason),
       });
     });
-    client.on("message_create", (message: unknown) => {
+    client.on("message", (message: unknown) => {
       void this.handleMessage(
         message as WhatsAppMessage & Record<string, unknown>,
       ).catch((error: unknown) => {
