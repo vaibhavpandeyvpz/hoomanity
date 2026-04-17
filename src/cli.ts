@@ -123,12 +123,12 @@ async function startApp(): Promise<void> {
     log.warn("no listeners enabled; process will stay idle", { scope: "app" });
   }
 
-  let shuttingDown = false;
+  let existing = false;
   const shutdown = async (signal: "SIGINT" | "SIGTERM") => {
-    if (shuttingDown) {
+    if (existing) {
       return;
     }
-    shuttingDown = true;
+    existing = true;
     log.info("received shutdown signal", { scope: "app", signal });
 
     for (const listener of listeners) {

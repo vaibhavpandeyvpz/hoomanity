@@ -61,10 +61,7 @@ export class WhatsAppReplies {
   }
 
   private async sendText(chatId: string, text: string): Promise<void> {
-    const chunks = this.formatter.format(text);
-    for (const chunk of chunks) {
-      await this.client.sendMessage(chatId, chunk);
-    }
+    await this.client.sendMessage(chatId, this.formatter.format(text));
   }
 
   private async guard(action: string, fn: () => Promise<void>): Promise<void> {

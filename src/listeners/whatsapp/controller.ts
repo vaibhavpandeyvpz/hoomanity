@@ -191,8 +191,12 @@ async function setWhatsAppProcessingReaction(
     return;
   }
   try {
-    await react(action === "add" ? "👀" : "");
-  } catch {
-    // best-effort only
+    await react.call(message, action === "add" ? "👀" : "");
+  } catch (error) {
+    log.warn(`failed to ${action} processing reaction`, {
+      scope: "whatsapp",
+      messageId: message.id?._serialized,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }

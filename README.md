@@ -18,7 +18,7 @@
 
 Hoomanity brings your coding agents into the chat apps your team already uses. Connect an ACP-compatible agent you already run, or spin up a local one, then talk to it from Slack, Telegram, or WhatsApp with persistent sessions, tool approvals, and a polished terminal configuration UI.
 
-If you already use tools like Cursor or OpenCode, Hoomanity gives them a chat-native front door. If you want a fully local stack, you can pair [hoomanjs](https://www.npmjs.com/package/hoomanjs) with Ollama and a model like Gemma 4, then expose that agent to your team through the messaging platforms they already live in.
+If you already use tools like Cursor, Gemini, OpenCode, Hoomanity gives them a chat-native front door. If you want a fully local stack, you can pair [hoomanjs](https://www.npmjs.com/package/hoomanjs) with Ollama and a model like Gemma 4, then expose that agent to your team through the messaging platforms they already live in.
 
 ## Why Hoomanity?
 
@@ -42,7 +42,7 @@ If you already use tools like Cursor or OpenCode, Hoomanity gives them a chat-na
 
 Hoomanity speaks ACP, so it is designed to sit in front of an agent process you already trust.
 
-- Existing agent workflow: point Hoomanity at an ACP-capable agent command such as the one provided by Cursor, OpenCode, or your own custom wrapper
+- Existing agent workflow: point Hoomanity at an ACP-capable agent command such as the one provided by Cursor, Gemini, OpenCode, or your own custom wrapper
 - Local agent workflow: run [hoomanjs](https://www.npmjs.com/package/hoomanjs) against Ollama with a local model such as Gemma 4, then connect Hoomanity to that command
 
 That means Hoomanity focuses on the messaging, session, and approval experience, while your preferred agent stack continues to handle reasoning and tool use.

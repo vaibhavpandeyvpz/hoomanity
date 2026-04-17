@@ -121,7 +121,7 @@ export class TelegramReplies {
   }
 
   private formatOne(text: string): string {
-    return this.formatter.format(text)[0] ?? text;
+    return this.formatter.format(text);
   }
 
   private async guard(action: string, fn: () => Promise<void>): Promise<void> {

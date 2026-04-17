@@ -21,6 +21,7 @@ export type WhatsAppMessage = {
   downloadMedia?: () => Promise<
     { data?: string; mimetype?: string; filename?: string } | undefined
   >;
+  react?: (reaction: string) => Promise<unknown>;
 };
 
 function attachmentsRoot(): string {
